@@ -1,0 +1,241 @@
+# =============================================================================
+# Python & Environment
+# =============================================================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# UV package manager
+uv.lock
+
+# =============================================================================
+# IDE & Editor Files
+# =============================================================================
+
+# PyCharm
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# =============================================================================
+# Development & Deployment
+# =============================================================================
+
+# Environment variables
+.env.local
+.env.*.local
+
+# Log files
+*.log
+logs/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+.dockerignore
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# =============================================================================
+# Application Data
+# =============================================================================
+
+# Docker volumes data
+/data/
+!/data/.gitkeep
+
+# Application specific
+/uploads/
+/downloads/
+/cache/
+
+# =============================================================================
+# OS Generated Files
+# =============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+
+# Linux
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# =============================================================================
+# Documentation & Configuration Management
+# =============================================================================
+
+# AI Assistant files (optional - remove if you want to track them)
+/CLAUDE.md
+/GEMINI.md
+/.claude/
+/.gemini/
+/.agent.md
+/.mcp.json
+
+# Development scripts (optional - remove if you want to track them)
+/fix-format.sh
+/fix-format-hook.sh
+
+# Documentation build
+/docs/_build/
+/docs/build/
+
+# =============================================================================
+# Security & Secrets
+# =============================================================================
+
+# Secret files
+*.pem
+*.key
+!*.pub
+secrets/
+.secrets/
+
+# SSL certificates
+*.crt
+*.csr
+
+# API keys and tokens
+.api-keys
+.tokens
+
+# =============================================================================
+# Monitoring & Analytics
+# =============================================================================
+
+# Profiling data
+*.prof
+.prof/
+
+# Monitoring data
+metrics/
+monitoring/
+
+# =============================================================================
+# Testing & Quality Assurance
+# =============================================================================
+
+# Test artifacts
+.mypy_cache/
+.ruff_cache/
+
+# Benchmark results
+benchmarks/results/
+
+# =============================================================================
+# Backup Files
+# =============================================================================
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+/MIGRATION.md
+/docker-compose.yml
+/base.md
+/ai-docs/
+/scripts/.installed_dependencies.txt
+/**/.benchmarks/
+/docs/asset_models_implementation.md
+/**/.import_linter_cache/
+/docs/testing_architecture_report.md
+/old-project/

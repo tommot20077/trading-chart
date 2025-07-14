@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trading-chart-libs"
+version = "0.1.0"
+description = "Shared libraries for trading-chart applications."
+requires-python = ">=3.12"
+dependencies = [
+    "trading-chart-core"
+]
+
+[tool.uv.sources]
+trading-chart-core = { workspace = true }

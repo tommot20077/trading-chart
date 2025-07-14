@@ -1,0 +1,96 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trading-chart"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "trading-chart-core",
+]
+
+
+[tool.uv.workspace]
+members = [
+    "src/core",
+    "src/libs",
+    "src/integrations",
+    "src/apps"
+]
+
+[tool.uv.sources]
+trading-chart-core = { workspace = true }
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = [
+    "**/tests",
+    "old-project",
+]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+exclude = [
+    "src/.*/tests",
+    "tests/e2e",
+    "old-project",
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = [
+    "src/*/tests/unit",
+    "src/*/tests/integration", 
+    "src/*/tests/contract",
+    "src/*/tests/benchmark",
+    "tests/e2e"
+]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+]
+markers = [
+    # Test levels
+    "unit: Unit tests - fast, isolated, no external dependencies",
+    "integration: Integration tests - test component interactions",
+    "e2e: End-to-end tests - full system tests",
+    "contract: Contract tests - interface compliance tests",
+    "benchmark: Benchmark tests - performance measurements",
+    "config: Tests related to configuration",
+
+    # Special attributes
+    "slow: Slow running tests (>1s)",
+    "external: Tests requiring external services",
+    "asyncio: Asynchronous tests",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0",
+    "poethepoet>=0.27.0",
+    "pytest-asyncio>=0.23.0",
+    "time-machine>=2.13.0",
+]
+
+[tool.poe.tasks]
+lint = "ruff check ."
+format = "ruff format ."
+test = "pytest"
+check-format = "ruff format --check ."
+check-types = "mypy ."
+check = ["check-format", "lint", "check-types"]
+validate = ["check", "test"]
+
+[dependency-groups]
+dev = [
+    "psutil>=7.0.0",
+    "pytest-benchmark>=5.1.0",
+]
