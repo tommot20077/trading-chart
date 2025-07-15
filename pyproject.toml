@@ -78,6 +78,12 @@ dev-dependencies = [
     "poethepoet>=0.27.0",
     "pytest-asyncio>=0.23.0",
     "time-machine>=2.13.0",
+    "import-linter>=2.0",
+    # Security scanning tools
+    "safety>=3.0",
+    "bandit>=1.7.0",
+    "pip-audit>=2.6.0",
+    "semgrep>=1.45.0",
 ]
 
 [tool.poe.tasks]
@@ -86,8 +92,18 @@ format = "ruff format ."
 test = "pytest"
 check-format = "ruff format --check ."
 check-types = "mypy ."
-check = ["check-format", "lint", "check-types"]
+check-deps = { shell = "cd src/core && lint-imports" }
+check = ["check-format", "lint", "check-types", "check-deps"]
+
+check-security = ["security-deps", "security-code"]
+security-deps = "safety check --json --ignore 67599"
+security-code = "bandit -r src/ -f json"
+security-audit = "pip-audit --format=json"
+security-semgrep = "semgrep --config=auto --json src/"
+security-full = ["security-deps", "security-code", "security-audit", "security-semgrep"]
+
 validate = ["check", "test"]
+
 
 [dependency-groups]
 dev = [

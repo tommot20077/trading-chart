@@ -11,3 +11,16 @@ dependencies = [
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
 ]
+
+[tool.importlinter]
+root_packages = ["core"]
+
+[[tool.importlinter.contracts]]
+name = "Core module dependency layers"
+type = "layers"
+layers = [
+    "core.implementations",
+    "core.interfaces",
+    "core.models",
+    "core.config",
+]

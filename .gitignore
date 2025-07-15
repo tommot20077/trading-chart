@@ -217,8 +217,10 @@ monitoring/
 .mypy_cache/
 .ruff_cache/
 
-# Benchmark results
+# Benchmark results (temporary)
 benchmarks/results/
+
+# Benchmark baselines are tracked in benchmarks/baselines/
 
 # =============================================================================
 # Backup Files
@@ -239,3 +241,4 @@ benchmarks/results/
 /**/.import_linter_cache/
 /docs/testing_architecture_report.md
 /old-project/
+/models_test.md

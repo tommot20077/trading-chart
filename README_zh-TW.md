@@ -57,23 +57,6 @@
 - **預提交鉤子**：自動執行標準
 - **不可繞過**：提交時絕不使用 `--no-verify`
 
-## 📊 效能測試
-
-### 使用 pytest-benchmark
-```bash
-# 執行所有效能測試
-uv run pytest src/core/tests/benchmark/ --benchmark-only
-
-# 儲存效能基線
-python scripts/run_benchmarks.py --save-baseline
-
-# 與基線比較
-python scripts/run_benchmarks.py --compare baseline
-
-# 產生 JSON 報告
-python scripts/run_benchmarks.py --format json
-```
-
 ### 目前效能基準
 - **單例存取**：~77ns（每秒 1300 萬次操作）
 - **基礎驗證器**：~400μs（每秒 2500 次操作）

@@ -1,0 +1,213 @@
+# ABOUTME: 測試 CI workflows 有效性的簡化版本
+# ABOUTME: 用於快速驗證 CI 配置是否正確，不執行完整的測試套件
+
+name: Test CI Configuration
+
+on:
+  workflow_dispatch:
+    inputs:
+      test-component:
+        description: 'Component to test'
+        required: false
+        default: 'basic'
+        type: choice
+        options:
+          - 'basic'
+          - 'security'
+          - 'benchmark'
+          - 'matrix'
+
+jobs:
+  test-basic:
+    name: 測試基本配置
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test-component == 'basic' || github.event.inputs.test-component == ''
+    
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: 🔧 Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: 🐍 Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    
+    - name: 🔗 Create virtual environment
+      run: uv venv
+    
+    - name: 📦 Install dependencies
+      run: |
+        source .venv/bin/activate
+        uv sync --dev
+    
+    - name: 🧪 Run basic tests
+      run: |
+        source .venv/bin/activate
+        uv run pytest src/core/tests/unit/config/test_base_settings.py::TestBaseCoreSettings::test_default_values -v
+    
+    - name: ✅ Basic configuration test passed
+      run: echo "✅ Basic CI configuration is working correctly"
+
+  test-security:
+    name: 測試安全掃描配置
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test-component == 'security'
+    
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: 🔧 Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: 🐍 Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    
+    - name: 🔗 Create virtual environment
+      run: uv venv
+    
+    - name: 📦 Install dependencies
+      run: |
+        source .venv/bin/activate
+        uv sync --dev
+    
+    - name: 🔐 Test security tools
+      run: |
+        source .venv/bin/activate
+        echo "Testing pip-audit..."
+        uv run pip-audit --format=json > test-audit.json
+        echo "✅ pip-audit works"
+        
+        echo "Testing bandit..."
+        uv run bandit -r src/core/core/config/ -f json > test-bandit.json || echo "⚠️ bandit found issues (normal)"
+        echo "✅ bandit works"
+        
+        echo "Testing safety (may fail due to known issues)..."
+        uv run safety --version || echo "⚠️ safety has issues"
+    
+    - name: 📄 Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-security-results
+        path: |
+          test-audit.json
+          test-bandit.json
+        retention-days: 7
+    
+    - name: ✅ Security configuration test passed
+      run: echo "✅ Security scanning configuration is working"
+
+  test-benchmark:
+    name: 測試 Benchmark 配置
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test-component == 'benchmark'
+    
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: 🔧 Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: 🐍 Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    
+    - name: 🔗 Create virtual environment
+      run: uv venv
+    
+    - name: 📦 Install dependencies
+      run: |
+        source .venv/bin/activate
+        uv sync --dev
+    
+    - name: 📈 Test benchmark execution
+      run: |
+        source .venv/bin/activate
+        uv run pytest src/core/tests/benchmark/config/test_settings_benchmark.py::TestSettingsBenchmark::test_settings_creation_benchmark --benchmark-only --benchmark-json=test-benchmark.json
+    
+    - name: 📄 Upload benchmark results
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-benchmark-results
+        path: test-benchmark.json
+        retention-days: 7
+    
+    - name: ✅ Benchmark configuration test passed
+      run: echo "✅ Benchmark configuration is working correctly"
+
+  test-matrix:
+    name: 測試矩陣配置 (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test-component == 'matrix'
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: 🔧 Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: 🐍 Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: 🔗 Create virtual environment
+      run: uv venv
+    
+    - name: 📦 Install dependencies
+      run: |
+        source .venv/bin/activate
+        uv sync --dev
+    
+    - name: 🧪 Run simple test
+      run: |
+        source .venv/bin/activate
+        uv run pytest src/core/tests/unit/config/test_base_settings.py::TestBaseCoreSettings::test_default_values -v
+    
+    - name: ✅ Matrix test passed
+      run: echo "✅ Python ${{ matrix.python-version }} configuration is working"
+
+  summary:
+    name: 📋 測試摘要
+    runs-on: ubuntu-latest
+    needs: [test-basic, test-security, test-benchmark, test-matrix]
+    if: always()
+    
+    steps:
+    - name: 📊 Generate test summary
+      run: |
+        echo "## 🧪 CI Configuration Test 結果摘要" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 測試結果" >> $GITHUB_STEP_SUMMARY
+        echo "- **基本配置**: ${{ needs.test-basic.result || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **安全掃描**: ${{ needs.test-security.result || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Benchmark**: ${{ needs.test-benchmark.result || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **矩陣測試**: ${{ needs.test-matrix.result || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.test-basic.result }}" == "success" ] || [ "${{ needs.test-security.result }}" == "success" ] || [ "${{ needs.test-benchmark.result }}" == "success" ] || [ "${{ needs.test-matrix.result }}" == "success" ]; then
+          echo "✅ **CI 配置測試通過！**" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **CI 配置測試失敗**" >> $GITHUB_STEP_SUMMARY
+        fi

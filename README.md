@@ -57,23 +57,6 @@ Modern trading data infrastructure with clean architecture design.
 - **Pre-commit hooks**: Automatically enforce standards
 - **No bypass**: NEVER use `--no-verify` when committing
 
-## Benchmark Testing
-
-### Using pytest-benchmark
-```bash
-# Run all benchmark tests
-uv run pytest src/core/tests/benchmark/ --benchmark-only
-
-# Save performance baseline
-python scripts/run_benchmarks.py --save-baseline
-
-# Compare against baseline
-python scripts/run_benchmarks.py --compare baseline
-
-# Generate JSON report
-python scripts/run_benchmarks.py --format json
-```
-
 ### Current Performance Benchmarks
 - **Singleton Access**: ~77ns (13M ops/sec)
 - **Basic Validators**: ~400μs (2.5K ops/sec)

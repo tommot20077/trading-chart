@@ -21,18 +21,13 @@ class BaseCoreSettings(BaseSettings):
     configuration system.
 
     Attributes:
-        APP_NAME: The name of the application, used for identification in logs
-            and monitoring systems.
-        ENV: The runtime environment, which controls environment-specific
-            behaviors like debugging and logging levels.
-        DEBUG: A flag to enable or disable debug mode, which may increase
-            log verbosity or enable diagnostic endpoints.
+        APP_NAME: The name of the application, used for identification in logs and monitoring systems.
+        ENV: The runtime environment, which controls environment-specific behaviors like debugging and logging levels.
+        DEBUG: A flag to enable or disable debug mode, which may increase log verbosity or enable diagnostic endpoints.
         LOG_LEVEL: The minimum level for log messages to be processed.
-        LOG_FORMAT: The format for log output, supporting structured (JSON)
-            and human-readable (txt) formats.
+        LOG_FORMAT: The format for log output, supporting structured (JSON) and human-readable (txt) formats.
         TIMEZONE: The canonical timezone for the application.
-        model_config: Pydantic's configuration dictionary, specifying how
-            settings are loaded.
+        model_config: Pydantic's configuration dictionary, specifying how settings are loaded.
     """
 
     # Application Identity
@@ -125,29 +120,29 @@ class BaseCoreSettings(BaseSettings):
     @classmethod
     def validate_timezone(cls, v: str) -> str:
         """Validate TIMEZONE field to ensure it's a valid IANA timezone identifier.
-        
+
         Uses Python's zoneinfo module to validate timezone names.
         Accepts standard IANA timezone identifiers like:
         - UTC
-        - America/New_York  
+        - America/New_York
         - Asia/Shanghai
         - Europe/London
-        
+
         Raises:
             ValueError: If the timezone is not a valid IANA timezone identifier.
         """
         if not isinstance(v, str):
             return v
-            
+
         v_stripped = v.strip()
-        
+
         # Handle empty string
         if not v_stripped:
             raise ValueError(
                 "Invalid timezone ''. Must be a valid IANA timezone identifier "
                 "(e.g., 'UTC', 'America/New_York', 'Asia/Shanghai')."
             )
-        
+
         # Validate the timezone using zoneinfo
         try:
             # Test if the timezone is valid by trying to create a ZoneInfo object
@@ -164,15 +159,15 @@ class BaseCoreSettings(BaseSettings):
                     # Capitalize and format city names
                     for i in range(1, len(parts)):
                         parts[i] = parts[i].replace("_", " ").title().replace(" ", "_")
-                    
+
                     proper_case_tz = "/".join(parts)
-                    
+
                     try:
                         zoneinfo.ZoneInfo(proper_case_tz)
                         return proper_case_tz
                     except (zoneinfo.ZoneInfoNotFoundError, ValueError):
                         pass
-            
+
             # If all attempts fail, raise a validation error
             raise ValueError(
                 f"Invalid timezone '{v_stripped}'. Must be a valid IANA timezone identifier "
