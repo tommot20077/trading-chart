@@ -15,17 +15,18 @@ from core.models.data.enum import KlineInterval
 class TestKlineEvent:
     """
     Comprehensive unit tests for KlineEvent model.
-    
+
     Tests cover:
     - Normal case: Valid KlineEvent creation and behavior
     - Exception case: Invalid inputs and error handling
     - Boundary case: Edge cases and extreme values
     """
 
+    @pytest.mark.unit
     def test_kline_event_creation_normal_case(self):
         """
         Test normal KlineEvent creation with valid Kline data.
-        
+
         Verifies:
         - Event type is automatically set to KLINE
         - All BaseEvent fields are properly initialized
@@ -43,16 +44,12 @@ class TestKlineEvent:
             close_price=Decimal("50050.00"),
             volume=Decimal("10.5"),
             quote_volume=Decimal("525000.00"),
-            trades_count=100
+            trades_count=100,
         )
-        
+
         # Act
-        event = KlineEvent(
-            source="binance",
-            symbol="BTCUSDT",
-            data=kline_data
-        )
-        
+        event = KlineEvent(source="binance", symbol="BTCUSDT", data=kline_data)
+
         # Assert
         assert event.event_type == EventType.KLINE
         assert event.source == "binance"
@@ -63,10 +60,11 @@ class TestKlineEvent:
         assert event.timestamp.tzinfo == UTC
         assert len(event.event_id) > 0
 
+    @pytest.mark.unit
     def test_kline_event_forced_event_type(self):
         """
         Test that event_type is always forced to KLINE regardless of input.
-        
+
         Verifies:
         - Even if different event_type is provided, it's overridden to KLINE
         - Event type field is frozen and cannot be changed
@@ -83,24 +81,25 @@ class TestKlineEvent:
             close_price=Decimal("3005.00"),
             volume=Decimal("5.2"),
             quote_volume=Decimal("15600.00"),
-            trades_count=50
+            trades_count=50,
         )
-        
+
         # Act - Try to set different event_type
         event = KlineEvent(
             source="coinbase",
             symbol="ETHUSDT",
             data=kline_data,
-            event_type=EventType.TRADE  # This should be ignored
+            event_type=EventType.TRADE,  # This should be ignored
         )
-        
+
         # Assert
         assert event.event_type == EventType.KLINE  # Should be KLINE, not TRADE
 
+    @pytest.mark.unit
     def test_kline_event_with_custom_priority(self):
         """
         Test KlineEvent creation with custom priority.
-        
+
         Verifies:
         - Custom priority is properly set
         - Other fields remain correct
@@ -117,25 +116,23 @@ class TestKlineEvent:
             close_price=Decimal("1.52"),
             volume=Decimal("1000.0"),
             quote_volume=Decimal("1520.00"),
-            trades_count=200
+            trades_count=200,
         )
-        
+
         # Act
         event = KlineEvent(
-            source="kraken",
-            symbol="ADAUSDT",
-            data=kline_data,
-            priority=EventPriority(EventPriority.HIGH)
+            source="kraken", symbol="ADAUSDT", data=kline_data, priority=EventPriority(EventPriority.HIGH)
         )
-        
+
         # Assert
         assert event.priority == EventPriority.HIGH
         assert event.event_type == EventType.KLINE
 
+    @pytest.mark.unit
     def test_kline_event_with_metadata_and_correlation_id(self):
         """
         Test KlineEvent with additional metadata and correlation ID.
-        
+
         Verifies:
         - Metadata is properly stored
         - Correlation ID is correctly set
@@ -153,30 +150,27 @@ class TestKlineEvent:
             close_price=Decimal("25.75"),
             volume=Decimal("500.0"),
             quote_volume=Decimal("12875.00"),
-            trades_count=75
+            trades_count=75,
         )
-        
+
         metadata = {"exchange_id": "binance_spot", "market_type": "spot"}
         correlation_id = "kline_batch_001"
-        
+
         # Act
         event = KlineEvent(
-            source="binance",
-            symbol="DOTUSDT",
-            data=kline_data,
-            metadata=metadata,
-            correlation_id=correlation_id
+            source="binance", symbol="DOTUSDT", data=kline_data, metadata=metadata, correlation_id=correlation_id
         )
-        
+
         # Assert
         assert event.metadata == metadata
         assert event.correlation_id == correlation_id
         assert event.event_type == EventType.KLINE
 
+    @pytest.mark.unit
     def test_kline_event_to_dict_method(self):
         """
         Test KlineEvent to_dict method.
-        
+
         Verifies:
         - Dictionary contains all expected fields
         - Timestamp is properly formatted as ISO string
@@ -194,18 +188,14 @@ class TestKlineEvent:
             close_price=Decimal("101.50"),
             volume=Decimal("250.0"),
             quote_volume=Decimal("25375.00"),
-            trades_count=125
+            trades_count=125,
         )
-        
-        event = KlineEvent(
-            source="ftx",
-            symbol="SOLUSDT",
-            data=kline_data
-        )
-        
+
+        event = KlineEvent(source="ftx", symbol="SOLUSDT", data=kline_data)
+
         # Act
         event_dict = event.to_dict()
-        
+
         # Assert
         assert "event_id" in event_dict
         assert "event_type" in event_dict
@@ -217,10 +207,11 @@ class TestKlineEvent:
         assert event_dict["event_type"] == EventType.KLINE
         assert isinstance(event_dict["timestamp"], str)  # Should be ISO format
 
+    @pytest.mark.unit
     def test_kline_event_str_representation(self):
         """
         Test KlineEvent string representation.
-        
+
         Verifies:
         - String format includes class name, ID, type, and source
         - Format is consistent and readable
@@ -237,28 +228,25 @@ class TestKlineEvent:
             close_price=Decimal("15.25"),
             volume=Decimal("800.0"),
             quote_volume=Decimal("12200.00"),
-            trades_count=300
+            trades_count=300,
         )
-        
-        event = KlineEvent(
-            source="huobi",
-            symbol="LINKUSDT",
-            data=kline_data
-        )
-        
+
+        event = KlineEvent(source="huobi", symbol="LINKUSDT", data=kline_data)
+
         # Act
         str_repr = str(event)
-        
+
         # Assert
         assert "KlineEvent" in str_repr
         assert event.event_id in str_repr
         assert "kline" in str_repr
         assert "huobi" in str_repr
 
+    @pytest.mark.unit
     def test_kline_event_invalid_data_type(self):
         """
         Test KlineEvent with invalid data type.
-        
+
         Verifies:
         - Proper validation error when data is not Kline type
         - Error message is descriptive
@@ -268,13 +256,14 @@ class TestKlineEvent:
             KlineEvent(
                 source="invalid_source",
                 symbol="INVALID",
-                data="not_a_kline_object"  # Invalid data type
+                data="not_a_kline_object",  # Invalid data type
             )
 
+    @pytest.mark.unit
     def test_kline_event_missing_required_fields(self):
         """
         Test KlineEvent creation with missing required fields.
-        
+
         Verifies:
         - Proper validation errors for missing source
         - Proper validation errors for missing data
@@ -291,29 +280,30 @@ class TestKlineEvent:
             close_price=Decimal("1.005"),
             volume=Decimal("100.0"),
             quote_volume=Decimal("100.50"),
-            trades_count=10
+            trades_count=10,
         )
-        
+
         # Test missing source
         with pytest.raises(Exception):  # Pydantic validation error
             KlineEvent(
                 symbol="TESTUSDT",
-                data=kline_data
+                data=kline_data,
                 # Missing source
             )
-        
+
         # Test missing data
         with pytest.raises(Exception):  # Pydantic validation error
             KlineEvent(
                 source="test_exchange",
-                symbol="TESTUSDT"
+                symbol="TESTUSDT",
                 # Missing data
             )
 
+    @pytest.mark.unit
     def test_kline_event_boundary_values(self):
         """
         Test KlineEvent with boundary values.
-        
+
         Verifies:
         - Handles very small decimal values
         - Handles very large decimal values
@@ -331,25 +321,22 @@ class TestKlineEvent:
             close_price=Decimal("0.000002"),
             volume=Decimal("0.000001"),
             quote_volume=Decimal("0.000002"),
-            trades_count=1
+            trades_count=1,
         )
-        
+
         # Act
-        event = KlineEvent(
-            source="test",
-            symbol="MICROUSDT",
-            data=kline_data
-        )
-        
+        event = KlineEvent(source="test", symbol="MICROUSDT", data=kline_data)
+
         # Assert
         assert event.data.open_price == Decimal("0.000001")
         assert event.data.high_price == Decimal("9999999.999999")
         assert event.event_type == EventType.KLINE
 
+    @pytest.mark.unit
     def test_kline_event_symbol_validation_inheritance(self):
         """
         Test that KlineEvent inherits symbol validation from BaseEvent.
-        
+
         Verifies:
         - Symbol is normalized (uppercase, stripped)
         - Invalid symbols raise appropriate errors
@@ -365,16 +352,16 @@ class TestKlineEvent:
             close_price=Decimal("50050.00"),
             volume=Decimal("10.0"),
             quote_volume=Decimal("500500.00"),
-            trades_count=100
+            trades_count=100,
         )
-        
+
         # Act
         event = KlineEvent(
             source="test",
             symbol="  btcusdt  ",  # With whitespace
-            data=kline_data
+            data=kline_data,
         )
-        
+
         # Assert
         assert event.symbol == "BTCUSDT"  # Should be normalized
 
@@ -383,5 +370,5 @@ class TestKlineEvent:
             KlineEvent(
                 source="test",
                 symbol="   ",  # Only whitespace
-                data=kline_data
+                data=kline_data,
             )

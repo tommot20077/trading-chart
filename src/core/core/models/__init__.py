@@ -4,21 +4,6 @@
 # Authentication models
 from .auth import AuthRequest, AuthToken, Role, Permission
 
-# Common models (exceptions)
-from .common import (
-    CoreException,
-    ValidationException,
-    BusinessLogicException,
-    DataNotFoundException,
-    ExternalServiceException,
-    ConfigurationException,
-    AuthenticationException,
-    AuthorizationError,
-    RateLimitExceededException,
-    DataIntegrityException,
-    TimeoutException,
-)
-
 # Data models
 from .data import BaseEvent, KlineInterval, AssetClass, TradeSide, Kline, Trade
 
@@ -34,18 +19,6 @@ __all__ = [
     "AuthToken",
     "Role",
     "Permission",
-    # Common/Exceptions
-    "CoreException",
-    "ValidationException",
-    "BusinessLogicException",
-    "DataNotFoundException",
-    "ExternalServiceException",
-    "ConfigurationException",
-    "AuthenticationException",
-    "AuthorizationError",
-    "RateLimitExceededException",
-    "DataIntegrityException",
-    "TimeoutException",
     # Data
     "BaseEvent",
     "KlineInterval",

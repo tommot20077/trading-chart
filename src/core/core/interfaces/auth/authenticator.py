@@ -19,20 +19,22 @@ class AbstractAuthenticator(ABC):
         """
         Authenticates an incoming request and returns the associated user token.
 
-        This asynchronous method should extract authentication credentials from the
-        `AuthRequest` (e.g., an Authorization header), validate them, and
-        return an `AuthToken` representing the authenticated principal.
+        This asynchronous method extracts authentication credentials from the
+        `AuthRequest` (e.g., an Authorization header), validates them, and
+        returns an `AuthToken` representing the authenticated principal.
+        It ensures that only valid and recognized entities can proceed with
+        further operations within the application.
 
         Args:
-            request: An object conforming to the `AuthRequest` protocol, representing
-                     the incoming request to be authenticated.
+            request (AuthRequest): An object conforming to the `AuthRequest` protocol,
+                                   representing the incoming request to be authenticated.
 
         Returns:
-            An object conforming to the `AuthToken` protocol, representing the
-            successfully authenticated user or client.
+            AuthToken: An object conforming to the `AuthToken` protocol, representing the
+                       successfully authenticated user or client.
 
         Raises:
-            AuthenticationError: If authentication fails (e.g., missing credentials,
-                                 invalid token, expired token).
+            AuthenticationError: If authentication fails due to reasons such as
+                                 missing credentials, invalid token, or an expired token.
         """
         pass

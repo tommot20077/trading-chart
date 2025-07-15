@@ -6,9 +6,7 @@ import pytest
 
 def pytest_configure(config):
     """Configure benchmark test markers."""
-    config.addinivalue_line(
-        "markers", "benchmark: marks tests as benchmark tests"
-    )
+    config.addinivalue_line("markers", "benchmark: marks tests as benchmark tests")
 
 
 def pytest_collection_modifyitems(config, items):

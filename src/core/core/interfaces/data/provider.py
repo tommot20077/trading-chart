@@ -24,7 +24,7 @@ class AbstractDataProvider(ABC):
         This name typically identifies the exchange or data source (e.g., "Binance", "Kraken").
 
         Returns:
-            A string representing the provider's name.
+            str: A string representing the provider's name.
         """
         pass
 
@@ -33,8 +33,9 @@ class AbstractDataProvider(ABC):
         """
         Establishes a connection to the data provider's service.
 
-        This asynchronous method should handle the necessary handshake, authentication,
-        and initialization to prepare the provider for data exchange.
+        This asynchronous method handles the necessary handshake, authentication,
+        and initialization to prepare the provider for data exchange. It ensures
+        that the provider is ready to stream or fetch market data.
 
         Raises:
             ConnectionError: If the connection attempt fails.
@@ -48,8 +49,8 @@ class AbstractDataProvider(ABC):
         """
         Closes the connection to the data provider's service.
 
-        This asynchronous method should gracefully terminate any active connections
-        and release associated network resources.
+        This asynchronous method gracefully terminates any active connections
+        and releases associated network resources, ensuring a clean shutdown.
 
         Raises:
             NetworkError: If an error occurs during disconnection.
@@ -62,16 +63,17 @@ class AbstractDataProvider(ABC):
         Streams real-time trade data for a specified trading symbol.
 
         This method is an asynchronous generator that yields `Trade` objects
-        as they become available from the data provider.
+        as they become available from the data provider. It is designed for
+        continuous, real-time consumption of trade events.
 
         Args:
-            symbol: The trading symbol (e.g., "BTC/USDT") for which to stream trades.
-            start_from: Optional. A `datetime` object indicating the historical point
-                        from which to start streaming trades. If `None`, streaming
-                        starts from the current real-time data.
+            symbol (str): The trading symbol (e.g., "BTCUSDT", "ETHUSD") for which to stream trades.
+            start_from (datetime | None): Optional. A `datetime` object indicating the historical point
+                                         from which to start streaming trades. If `None`, streaming
+                                         starts from the current real-time data.
 
         Yields:
-            `Trade`: Each standardized trade event as it occurs.
+            Trade: Each standardized trade event as it occurs.
 
         Raises:
             ConnectionError: If the connection to the provider is lost during streaming.
@@ -88,17 +90,18 @@ class AbstractDataProvider(ABC):
 
         This method is an asynchronous generator that yields `Kline` objects
         as new K-line candles are closed and become available from the data provider.
+        It is designed for continuous, real-time consumption of candlestick data.
 
         Args:
-            symbol: The trading symbol (e.g., "ETH/USD") for which to stream K-lines.
-            interval: The `KlineInterval` enum member specifying the time granularity
-                      of the K-lines (e.g., 1 minute, 1 hour).
-            start_from: Optional. A `datetime` object indicating the historical point
-                        from which to start streaming K-lines. If `None`, streaming
-                        starts from the current real-time data.
+            symbol (str): The trading symbol (e.g., "BTCUSDT", "ETHUSD") for which to stream K-lines.
+            interval (KlineInterval): The `KlineInterval` enum member specifying the time granularity
+                                    of the K-lines (e.g., 1 minute, 1 hour).
+            start_from (datetime | None): Optional. A `datetime` object indicating the historical point
+                                         from which to start streaming K-lines. If `None`, streaming
+                                         starts from the current real-time data.
 
         Yields:
-            `Kline`: Each standardized K-line event as it closes.
+            Kline: Each standardized K-line event as it closes.
 
         Raises:
             ConnectionError: If the connection to the provider is lost during streaming.
@@ -114,22 +117,23 @@ class AbstractDataProvider(ABC):
         Fetches historical trade data within a specified time range.
 
         This asynchronous method retrieves a list of past trade events from the provider.
+        It is suitable for backtesting, analysis, or populating initial datasets.
 
         Args:
-            symbol: The trading symbol for which to fetch historical trades.
-            start_time: The `datetime` object marking the beginning of the historical period.
-            end_time: The `datetime` object marking the end of the historical period.
-            limit: Optional. The maximum number of historical trades to fetch. If `None`,
-                   the provider's default or maximum limit will apply.
+            symbol (str): The trading symbol (e.g., "BTCUSDT", "ETHUSD") for which to fetch historical trades.
+            start_time (datetime): The `datetime` object marking the beginning of the historical period (inclusive).
+            end_time (datetime): The `datetime` object marking the end of the historical period (inclusive).
+            limit (int | None): Optional. The maximum number of historical trades to fetch. If `None`,
+                               the provider's default or maximum limit will apply.
 
         Returns:
-            A list of standardized `Trade` models within the specified time range.
+            list[Trade]: A list of standardized `Trade` models within the specified time range.
 
         Raises:
             DataProviderError: If the historical data cannot be fetched (e.g., invalid time range,
-                               provider error, rate limit).
-            NetworkError: For underlying network issues.
-            TimeoutError: If the request exceeds the allotted time.
+                               provider error, or rate limit issues).
+            NetworkError: For underlying network issues during the data retrieval.
+            TimeoutError: If the request to the data provider exceeds the allotted time.
         """
         pass
 
@@ -147,23 +151,24 @@ class AbstractDataProvider(ABC):
         Fetches historical K-line (candlestick) data within a specified time range.
 
         This asynchronous method retrieves a list of past K-line candles from the provider.
+        It is useful for backtesting, charting, and historical analysis.
 
         Args:
-            symbol: The trading symbol for which to fetch historical K-lines.
-            interval: The `KlineInterval` enum member for the desired K-line granularity.
-            start_time: The `datetime` object marking the beginning of the historical period.
-            end_time: The `datetime` object marking the end of the historical period.
-            limit: Optional. The maximum number of historical K-lines to fetch. If `None`,
-                   the provider's default or maximum limit will apply.
+            symbol (str): The trading symbol (e.g., "BTCUSDT", "ETHUSD") for which to fetch historical K-lines.
+            interval (KlineInterval): The `KlineInterval` enum member for the desired K-line granularity.
+            start_time (datetime): The `datetime` object marking the beginning of the historical period (inclusive).
+            end_time (datetime): The `datetime` object marking the end of the historical period (inclusive).
+            limit (int | None): Optional. The maximum number of historical K-lines to fetch. If `None`,
+                               the provider's default or maximum limit will apply.
 
         Returns:
-            A list of standardized `Kline` models within the specified time range.
+            list[Kline]: A list of standardized `Kline` models within the specified time range.
 
         Raises:
             DataProviderError: If the historical data cannot be fetched (e.g., invalid time range,
-                               provider error, rate limit).
-            NetworkError: For underlying network issues.
-            TimeoutError: If the request exceeds the allotted time.
+                               provider error, or rate limit issues).
+            NetworkError: For underlying network issues during the data retrieval.
+            TimeoutError: If the request to the data provider exceeds the allotted time.
         """
         pass
 
@@ -172,15 +177,15 @@ class AbstractDataProvider(ABC):
         """
         Retrieves general information about the exchange.
 
-        This can include supported symbols, trading rules, asset details,
-        and other global exchange configurations.
+        This asynchronous method fetches global exchange configurations, including
+        supported symbols, trading rules, asset details, and other relevant metadata.
 
         Returns:
-            A dictionary containing exchange information.
+            dict[str, Any]: A dictionary containing comprehensive exchange information.
 
         Raises:
-            DataProviderError: If the information cannot be retrieved.
-            NetworkError: For underlying network issues.
+            DataProviderError: If the information cannot be retrieved due to provider-specific issues.
+            NetworkError: For underlying network issues during the retrieval.
         """
         pass
 
@@ -189,18 +194,18 @@ class AbstractDataProvider(ABC):
         """
         Retrieves detailed information for a specific trading symbol.
 
-        This can include precision rules, minimum/maximum order quantities,
-        trading status, and other symbol-specific metadata.
+        This asynchronous method fetches symbol-specific metadata, such as precision rules,
+        minimum/maximum order quantities, trading status, and other relevant details.
 
         Args:
-            symbol: The trading symbol (e.g., "BTC/USDT") for which to retrieve information.
+            symbol (str): The trading symbol (e.g., "BTCUSDT", "ETHUSD") for which to retrieve information.
 
         Returns:
-            A dictionary containing detailed information for the specified symbol.
+            dict[str, Any]: A dictionary containing detailed information for the specified symbol.
 
         Raises:
             DataProviderError: If the symbol information cannot be retrieved or the symbol is invalid.
-            NetworkError: For underlying network issues.
+            NetworkError: For underlying network issues during the retrieval.
         """
         pass
 
@@ -209,8 +214,11 @@ class AbstractDataProvider(ABC):
         """
         Pings the data provider to check connectivity and measure latency.
 
+        This asynchronous method sends a lightweight request to the data provider
+        to verify network connectivity and estimate the round-trip time.
+
         Returns:
-            The response time in milliseconds as a float.
+            float: The response time in milliseconds as a float.
 
         Raises:
             NetworkError: If the ping fails due to connectivity issues.
@@ -223,9 +231,13 @@ class AbstractDataProvider(ABC):
         """
         Closes the data provider and cleans up any associated resources.
 
-        This asynchronous method should release network connections, stop background
-        tasks, and perform any necessary shutdown procedures to gracefully
-        terminate the provider's operation.
+        This asynchronous method releases network connections, stops background
+        tasks, and performs any necessary shutdown procedures to gracefully
+        terminate the provider's operation. It should be called to ensure
+        proper resource management.
+
+        Returns:
+            None: This method does not return a value.
         """
         pass
 
@@ -235,15 +247,16 @@ class AbstractDataProvider(ABC):
         Validates the provided configuration dictionary for the data provider.
 
         This method ensures that the configuration contains all necessary parameters
-        and that their values are valid for initializing the provider.
+        and that their values are valid for initializing the provider. It serves as
+        an early check to prevent runtime errors due to malformed configurations.
 
         Args:
-            config: A dictionary containing the configuration parameters for the provider.
+            config (dict[str, Any]): A dictionary containing the configuration parameters for the provider.
 
         Returns:
-            A tuple where the first element is `True` if the configuration is valid,
-            and `False` otherwise. The second element is an error message (string)
-            if validation fails, or an empty string (`""`) if validation succeeds.
+            tuple[bool, str]: A tuple where the first element is `True` if the configuration is valid,
+                              and `False` otherwise. The second element is an error message (string)
+                              if validation fails, or an empty string (`""`) if validation succeeds.
         """
         pass
 
@@ -254,15 +267,16 @@ class AbstractDataProvider(ABC):
 
         This method is typically implemented by a data converter (e.g., `AbstractDataConverter`)
         and is included here to indicate that data providers are expected to facilitate
-        this conversion for their specific raw data formats.
+        this conversion for their specific raw data formats. It efficiently processes
+        batches of raw trade data.
 
         Args:
-            raw_trades: A list of dictionaries, where each dictionary contains raw trade data
-                        from the exchange.
-            symbol: The trading symbol for which the trades occurred.
+            raw_trades (list[dict[str, Any]]): A list of dictionaries, where each dictionary contains raw trade data
+                                              from the exchange.
+            symbol (str): The trading symbol (e.g., "BTCUSDT", "ETHUSD") for which the trades occurred.
 
         Returns:
-            A list of standardized `Trade` model instances.
+            list[Trade]: A list of standardized `Trade` model instances.
 
         Raises:
             ValueError: If any raw trade data in the list is malformed or missing critical fields.
@@ -277,15 +291,16 @@ class AbstractDataProvider(ABC):
 
         Similar to `convert_multiple_trades`, this method is typically implemented by a data converter
         and is included here to indicate that data providers are expected to facilitate
-        this conversion for their specific raw K-line data formats.
+        this conversion for their specific raw K-line data formats. It efficiently processes
+        batches of raw K-line data.
 
         Args:
-            raw_klines: A list of dictionaries, where each dictionary contains raw K-line data
-                        from the exchange.
-            symbol: The trading symbol for which the K-lines occurred.
+            raw_klines (list[dict[str, Any]]): A list of dictionaries, where each dictionary contains raw K-line data
+                                              from the exchange.
+            symbol (str): The trading symbol (e.g., "BTCUSDT", "ETHUSD") for which the K-lines occurred.
 
         Returns:
-            A list of standardized `Kline` model instances.
+            list[Kline]: A list of standardized `Kline` model instances.
 
         Raises:
             ValueError: If any raw K-line data in the list is malformed or missing critical fields.
@@ -299,8 +314,11 @@ class AbstractDataProvider(ABC):
         """
         Checks if the data provider is currently connected to its external service.
 
+        This property provides a quick way to ascertain the current connection status
+        without attempting to establish a new connection.
+
         Returns:
-            `True` if the provider has an active connection, `False` otherwise.
+            bool: `True` if the provider has an active connection, `False` otherwise.
         """
         pass
 
@@ -309,10 +327,11 @@ class AbstractDataProvider(ABC):
         Asynchronous context manager entry point.
 
         This method allows the `AbstractDataProvider` to be used with the `async with` statement.
-        It ensures that the `connect()` method is called upon entering the context.
+        It ensures that the `connect()` method is called upon entering the context,
+        automatically establishing the connection.
 
         Returns:
-            The instance of the `AbstractDataProvider` itself.
+            AbstractDataProvider: The instance of the `AbstractDataProvider` itself.
         """
         await self.connect()
         return self
@@ -322,11 +341,15 @@ class AbstractDataProvider(ABC):
         Asynchronous context manager exit point.
 
         This method ensures that the `close()` method is called upon exiting the `async with` block,
-        regardless of whether an exception occurred. It handles resource cleanup.
+        regardless of whether an exception occurred. It handles resource cleanup,
+        such as closing network connections and stopping background tasks.
 
         Args:
-            exc_type: The type of the exception that caused the context to be exited, or `None`.
-            exc_val: The exception instance that caused the context to be exited, or `None`.
-            exc_tb: The traceback object associated with the exception, or `None`.
+            exc_type (Any): The type of the exception that caused the context to be exited, or `None`.
+            exc_val (Any): The exception instance that caused the context to be exited, or `None`.
+            exc_tb (Any): The traceback object associated with the exception, or `None`.
+
+        Returns:
+            None: This method does not return a value.
         """
         await self.close()

@@ -1,22 +1,25 @@
+# ABOUTME: Defines the abstract interface for event storage operations.
+# ABOUTME: This module specifies the contract for storing, retrieving, and managing events.
+
 from abc import abstractmethod, ABC
 from typing import AsyncIterator
 
 from core.interfaces.event.event_serializer import AbstractEventSerializer
-from core.models.data.base import BaseEvent
+from core.models.data.event import BaseEvent
 from core.models.event.event_query import EventQuery
 from core.models.event.event_storage_stats import EventStorageStats
 
 
 class AbstractEventStorage(ABC):
     """
-    [L0] Abstract base class for event storage backends.
+    Abstract base class for event storage backends.
 
     This interface defines the contract for implementing event persistence and
     retrieval functionality. Concrete implementations are responsible for
     interacting with specific storage technologies (e.g., relational databases,
     NoSQL databases, file systems, in-memory stores) to store and query events.
 
-    Architecture note: This is a [L0] interface that only depends on core data models
+    Architecture Note: This is a [L0] interface that only depends on core data models
     (`BaseEvent`, `EventQuery`, `EventStorageStats`) and provides clean abstractions
     for higher-level [L1] storage implementations.
     """
@@ -29,9 +32,8 @@ class AbstractEventStorage(ABC):
         convert events to/from a storable format.
 
         Args:
-            serializer: An instance of `AbstractEventSerializer` used for
-                        serializing events before storage and deserializing
-                        them after retrieval.
+            serializer (AbstractEventSerializer): An instance of `AbstractEventSerializer` used for
+                serializing events before storage and deserializing them after retrieval.
         """
         self.serializer = serializer
 
@@ -44,14 +46,14 @@ class AbstractEventStorage(ABC):
         return a unique identifier for the stored event within the storage system.
 
         Args:
-            event: The `BaseEvent` object to be stored.
+            event (BaseEvent): The `BaseEvent` object to be stored.
 
         Returns:
-            A string representing the unique storage ID of the stored event.
+            str: A string representing the unique storage ID of the stored event.
 
         Raises:
             EventStorageError: If the event cannot be stored (e.g., connection issues,
-                               permission problems, storage full).
+                permission problems, storage full).
         """
         pass
 
@@ -63,11 +65,11 @@ class AbstractEventStorage(ABC):
         This method should optimize for storing multiple events efficiently.
 
         Args:
-            events: A list of `BaseEvent` objects to be stored.
+            events (list[BaseEvent]): A list of `BaseEvent` objects to be stored.
 
         Returns:
-            A list of strings, where each string is the unique storage ID for the
-            corresponding stored event in the input list.
+            list[str]: A list of strings, where each string is the unique storage ID for the
+                corresponding stored event in the input list.
 
         Raises:
             EventStorageError: If any event in the batch cannot be stored.
@@ -82,14 +84,14 @@ class AbstractEventStorage(ABC):
         The retrieved data is typically deserialized back into a `BaseEvent` object.
 
         Args:
-            storage_id: The unique string identifier of the event to retrieve.
+            storage_id (str): The unique string identifier of the event to retrieve.
 
         Returns:
-            The deserialized `BaseEvent` object if found, otherwise `None`.
+            BaseEvent | None: The deserialized `BaseEvent` object if found, otherwise `None`.
 
         Raises:
             EventStorageError: If the event cannot be retrieved (e.g., data corruption,
-                               connection issues, permissions).
+                connection issues, permissions).
         """
         pass
 
@@ -102,21 +104,21 @@ class AbstractEventStorage(ABC):
         in the `EventQuery` object.
 
         Args:
-            query: An `EventQuery` object specifying the filtering, ordering,
-                   and pagination criteria for event retrieval.
+            query (EventQuery): An `EventQuery` object specifying the filtering, ordering,
+                and pagination criteria for event retrieval.
 
         Returns:
-            A list of `BaseEvent` objects that match the query criteria,
-            sorted and paginated as specified.
+            list[BaseEvent]: A list of `BaseEvent` objects that match the query criteria,
+                sorted and paginated as specified.
 
         Raises:
             EventStorageError: If the query operation fails (e.g., invalid query,
-                               connection issues).
+                connection issues).
         """
         pass
 
     @abstractmethod
-    async def stream_events(self, query: EventQuery) -> AsyncIterator[BaseEvent]:
+    def stream_events(self, query: EventQuery) -> AsyncIterator[BaseEvent]:
         """
         Streams events from the storage backend based on the provided `EventQuery` criteria.
 
@@ -125,11 +127,11 @@ class AbstractEventStorage(ABC):
         large datasets without loading all events into memory simultaneously.
 
         Args:
-            query: An `EventQuery` object specifying the filtering, ordering,
-                   and pagination criteria for event streaming.
+            query (EventQuery): An `EventQuery` object specifying the filtering, ordering,
+                and pagination criteria for event streaming.
 
         Yields:
-            `BaseEvent`: Each event that matches the query criteria.
+            BaseEvent: Each event that matches the query criteria.
 
         Raises:
             EventStorageError: If the streaming operation encounters an error.
@@ -141,15 +143,17 @@ class AbstractEventStorage(ABC):
         """
         Deletes a single event from the storage backend using its unique storage ID.
 
+        Removes a specific event from the storage system based on its unique identifier.
+
         Args:
-            storage_id: The unique string identifier of the event to delete.
+            storage_id (str): The unique string identifier of the event to delete.
 
         Returns:
-            `True` if the event was found and successfully deleted, `False` otherwise.
+            bool: `True` if the event was found and successfully deleted, `False` otherwise.
 
         Raises:
             EventStorageError: If the deletion operation fails (e.g., connection issues,
-                               permissions).
+                permissions).
         """
         pass
 
@@ -161,10 +165,10 @@ class AbstractEventStorage(ABC):
         This method should efficiently remove all events that match the specified query.
 
         Args:
-            query: An `EventQuery` object specifying the criteria for events to be deleted.
+            query (EventQuery): An `EventQuery` object specifying the criteria for events to be deleted.
 
         Returns:
-            The number of events that were found and successfully deleted.
+            int: The number of events that were found and successfully deleted.
 
         Raises:
             EventStorageError: If the batch deletion operation fails.
@@ -181,7 +185,7 @@ class AbstractEventStorage(ABC):
         These statistics are vital for monitoring and capacity planning.
 
         Returns:
-            An `EventStorageStats` object containing various statistics about the storage.
+            EventStorageStats: An `EventStorageStats` object containing various statistics about the storage.
 
         Raises:
             EventStorageError: If statistics cannot be retrieved (e.g., connection issues).
@@ -197,7 +201,7 @@ class AbstractEventStorage(ABC):
         underlying storage system.
 
         Returns:
-            `True` if the storage backend is healthy and operational, `False` otherwise.
+            bool: `True` if the storage backend is healthy and operational, `False` otherwise.
 
         Raises:
             EventStorageError: If the health check itself encounters an unrecoverable error.
@@ -212,5 +216,8 @@ class AbstractEventStorage(ABC):
         This asynchronous method should release database connections, close file handles,
         stop background processes, and perform any necessary shutdown procedures
         to gracefully terminate the storage component.
+
+        Returns:
+            None: This method does not return any value.
         """
         pass

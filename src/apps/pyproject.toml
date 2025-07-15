@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "trading-chart-apps"
 version = "0.1.0"
 description = "Applications for trading-chart."
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "trading-chart-core",
     "trading-chart-libs",

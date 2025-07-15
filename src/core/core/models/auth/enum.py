@@ -8,6 +8,7 @@ class Role(str, Enum):
 
     ADMIN = "admin"
     USER = "user"
+    VIEWER = "viewer"
 
 
 class Permission(str, Enum):

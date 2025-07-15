@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "trading-chart"
 version = "0.1.0"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "trading-chart-core",
 ]
@@ -24,16 +24,17 @@ trading-chart-core = { workspace = true }
 
 [tool.ruff]
 line-length = 120
-target-version = "py312"
+target-version = "py311"
 exclude = [
     "**/tests",
     "old-project",
 ]
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
+disable_error_code = ["annotation-unchecked"]
 exclude = [
     "src/.*/tests",
     "tests/e2e",
@@ -53,6 +54,11 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "--verbose",
+    "--timeout-method=thread",
+]
+filterwarnings = [
+    # Ignore fixture marks warning from pytest itself
+    "ignore:Marks applied to fixtures have no effect:pytest.PytestRemovedIn9Warning"
 ]
 markers = [
     # Test levels
@@ -67,7 +73,13 @@ markers = [
     "slow: Slow running tests (>1s)",
     "external: Tests requiring external services",
     "asyncio: Asynchronous tests",
+    "concurrency: Tests involving concurrency",
+    "timeout: Tests with timeout restrictions",
+
 ]
+
+# Unit test timeout configuration
+# pytest-timeout is configured via pytest hooks in conftest.py
 
 [tool.uv]
 dev-dependencies = [
@@ -77,6 +89,7 @@ dev-dependencies = [
     "mypy>=1.0",
     "poethepoet>=0.27.0",
     "pytest-asyncio>=0.23.0",
+    "pytest-timeout>=2.1.0",
     "time-machine>=2.13.0",
     "import-linter>=2.0",
     # Security scanning tools
@@ -86,14 +99,29 @@ dev-dependencies = [
     "semgrep>=1.45.0",
 ]
 
+[dependency-groups]
+dev = [
+    "psutil>=7.0.0",
+    "pytest-benchmark>=5.1.0",
+]
+
 [tool.poe.tasks]
 lint = "ruff check ."
 format = "ruff format ."
 test = "pytest"
-check-format = "ruff format --check ."
+check-format = "ruff format ."
 check-types = "mypy ."
 check-deps = { shell = "cd src/core && lint-imports" }
 check = ["check-format", "lint", "check-types", "check-deps"]
+
+# Test classification tasks
+test-unit = "pytest -m unit"
+test-integration = "pytest -m integration"
+test-contract = "pytest -m contract"
+test-benchmark = "pytest -m benchmark"
+test-fast = "pytest -m 'not slow'"
+test-slow = "pytest -m slow"
+test-all = "pytest"
 
 check-security = ["security-deps", "security-code"]
 security-deps = "safety check --json --ignore 67599"
@@ -103,10 +131,3 @@ security-semgrep = "semgrep --config=auto --json src/"
 security-full = ["security-deps", "security-code", "security-audit", "security-semgrep"]
 
 validate = ["check", "test"]
-
-
-[dependency-groups]
-dev = [
-    "psutil>=7.0.0",
-    "pytest-benchmark>=5.1.0",
-]

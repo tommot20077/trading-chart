@@ -1,8 +1,10 @@
 from abc import abstractmethod, ABC
-from typing import Callable, Awaitable
+from typing import Callable, Awaitable, Optional
 
-from core.models.data.base import BaseEvent
+from core.interfaces.middleware import AbstractMiddlewarePipeline
+from core.models.data.event import BaseEvent
 from core.models.event.event_type import EventType
+# from core.interfaces.middleware import AbstractMiddlewarePipeline
 
 
 EventHandler = Callable[[BaseEvent], None]  # Type alias for a synchronous event handler function.
@@ -29,11 +31,15 @@ class AbstractEventBus(ABC):
         """
         Publishes an event to the event bus.
 
-        The event bus is responsible for dispatching this event to all currently
-        active and matching subscribers. This is an asynchronous operation.
+        This asynchronous operation dispatches the `BaseEvent` object to all currently
+        active and matching subscribers. It serves as the primary mechanism for
+        broadcasting events within the application.
 
         Args:
-            event: The `BaseEvent` object to be published.
+            event (BaseEvent): The `BaseEvent` object to be published.
+
+        Returns:
+            None: This method does not return a value.
         """
         pass
 
@@ -48,20 +54,21 @@ class AbstractEventBus(ABC):
         """
         Subscribes a handler function to events of a specific type.
 
-        When an event matching the `event_type` (and optional `filter_symbol`)
+        When an event matching the `event_type` (and optional `filter_symbol` or `filter_func`)
         is published, the provided `handler` will be invoked. This method returns
         a unique subscription ID that can be used later to unsubscribe.
 
         Args:
-            event_type: The `EventType` enum member to subscribe to.
-            handler: The callable function (synchronous or asynchronous) that will
-                     process matching events.
-            filter_symbol: Optional. A specific trading symbol. If provided, the handler
-                           will only receive events of `event_type` that are also
-                           associated with this symbol.
+            event_type (EventType): The `EventType` enum member to subscribe to.
+            handler (EventHandler | AsyncEventHandler): The callable function (synchronous or asynchronous)
+                                                        that will process matching events.
+            filter_symbol (str | None): Optional. A specific trading symbol. If provided, the handler
+                                        will only receive events of `event_type` that are also
+                                        associated with this symbol. This offers a convenient way
+                                        to filter for common symbol-specific events.
 
         Returns:
-            A unique string identifier for the newly created subscription.
+            str: A unique string identifier for the newly created subscription.
 
         Raises:
             ValueError: If the handler is invalid or subscription parameters are malformed.
@@ -75,11 +82,15 @@ class AbstractEventBus(ABC):
         """
         Unsubscribes a handler from events using its unique subscription ID.
 
+        This method removes a previously established subscription, preventing the
+        associated handler from receiving further events. It is essential for
+        managing the lifecycle of event listeners.
+
         Args:
-            subscription_id: The unique string identifier of the subscription to remove.
+            subscription_id (str): The unique string identifier of the subscription to remove.
 
         Returns:
-            `True` if the subscription was found and successfully removed, `False` otherwise.
+            bool: `True` if the subscription was found and successfully removed, `False` otherwise.
         """
         pass
 
@@ -90,14 +101,14 @@ class AbstractEventBus(ABC):
 
         If `event_type` is specified, only handlers subscribed to that particular
         event type will be unsubscribed. Otherwise, all handlers for all event
-        types will be removed.
+        types will be removed. This method is useful for bulk cleanup of subscriptions.
 
         Args:
-            event_type: Optional. The specific `EventType` to unsubscribe all handlers from.
-                        If `None`, all subscriptions across all event types are removed.
+            event_type (EventType | None): Optional. The specific `EventType` to unsubscribe all handlers from.
+                                         If `None`, all subscriptions across all event types are removed.
 
         Returns:
-            The number of handlers that were successfully unsubscribed.
+            int: The number of handlers that were successfully unsubscribed.
         """
         pass
 
@@ -106,9 +117,13 @@ class AbstractEventBus(ABC):
         """
         Closes the event bus and cleans up any associated resources.
 
-        This asynchronous method should release network connections, stop background
-        tasks, clear internal queues, and perform any necessary shutdown procedures
-        to gracefully terminate the event bus operation.
+        This asynchronous method releases network connections, stops background
+        tasks, clears internal queues, and performs any necessary shutdown procedures
+        to gracefully terminate the event bus operation. It should be called to ensure
+        proper resource management upon application shutdown.
+
+        Returns:
+            None: This method does not return a value.
         """
         pass
 
@@ -117,13 +132,15 @@ class AbstractEventBus(ABC):
         """
         Retrieves the number of active subscriptions currently managed by the event bus.
 
+        This method provides insight into the current state of event listeners.
+
         Args:
-            event_type: Optional. If provided, returns the count of subscriptions
-                        only for this specific `EventType`. If `None`, returns the
-                        total count of all active subscriptions across all types.
+            event_type (EventType | None): Optional. If provided, returns the count of subscriptions
+                                         only for this specific `EventType`. If `None`, returns the
+                                         total count of all active subscriptions across all types.
 
         Returns:
-            The integer count of active subscriptions.
+            int: The integer count of active subscriptions.
         """
         pass
 
@@ -134,7 +151,7 @@ class AbstractEventBus(ABC):
         *,
         timeout: float | None = None,
         filter_func: Callable[[BaseEvent], bool] | None = None,
-    ) -> BaseEvent | None:
+    ) -> BaseEvent:
         """
         Asynchronously waits for a specific event to be published on the bus.
 
@@ -144,17 +161,19 @@ class AbstractEventBus(ABC):
         a custom filtering function.
 
         Args:
-            event_type: The `EventType` enum member of the event to wait for.
-            timeout: Optional. The maximum number of seconds to wait for the event.
-                     If the event does not occur within this duration, `None` is returned.
-                     If `None`, it waits indefinitely.
-            filter_func: Optional. A callable that takes a `BaseEvent` and returns a boolean.
-                         If provided, the `wait_for` method will only consider events for which
-                         `filter_func(event)` returns `True`.
+            event_type (EventType): The `EventType` enum member of the event to wait for.
+            timeout (float | None): Optional. The maximum number of seconds to wait for the event.
+                                  If the event does not occur within this duration, `asyncio.TimeoutError` is raised.
+                                  If `None`, it waits indefinitely.
+            filter_func (Callable[[BaseEvent], bool] | None): Optional. A callable that takes a `BaseEvent` and returns a boolean.
+                                                               If provided, the `wait_for` method will only consider events for which
+                                                               `filter_func(event)` returns `True`.
 
         Returns:
-            The `BaseEvent` object that was waited for and matched the criteria,
-            or `None` if the timeout was reached without a matching event.
+            BaseEvent: The `BaseEvent` object that was waited for and matched the criteria.
+
+        Raises:
+            asyncio.TimeoutError: If the timeout was reached without a matching event.
         """
         pass
 
@@ -165,9 +184,40 @@ class AbstractEventBus(ABC):
         Checks if the event bus is currently in a closed state.
 
         A closed event bus typically means it is no longer accepting new publications
-        or dispatching events, and its resources have been cleaned up.
+        or dispatching events, and its resources have been cleaned up. This property
+        provides a quick way to check the operational status of the bus.
 
         Returns:
-            `True` if the event bus is closed, `False` otherwise.
+            bool: `True` if the event bus is closed, `False` otherwise.
+        """
+        pass
+
+    @abstractmethod
+    async def set_middleware_pipeline(self, pipeline: Optional[AbstractMiddlewarePipeline]) -> None:
+        """
+        Sets the middleware pipeline for event processing.
+
+        The middleware pipeline will be executed before event handlers are invoked.
+        This allows for cross-cutting concerns like authentication, logging, rate limiting,
+        and metrics collection to be applied to all events consistently.
+
+        Args:
+            pipeline (Optional[AbstractMiddlewarePipeline]): The middleware pipeline to set, or `None` to remove the current pipeline.
+
+        Returns:
+            None: This method does not return a value.
+        """
+        pass
+
+    @abstractmethod
+    async def get_middleware_pipeline(self) -> Optional[AbstractMiddlewarePipeline]:
+        """
+        Gets the currently configured middleware pipeline.
+
+        This method allows retrieval of the active middleware pipeline, which processes
+        events before they reach their handlers.
+
+        Returns:
+            Optional[AbstractMiddlewarePipeline]: The current middleware pipeline, or `None` if no pipeline is set.
         """
         pass

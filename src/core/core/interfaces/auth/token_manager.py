@@ -12,6 +12,7 @@ class AbstractTokenManager(ABC):
     the lifecycle management of authentication tokens, including their generation,
     validation, and refreshing. Concrete implementations would handle specific
     token types (e.g., JWT, OAuth tokens).
+    #todo: sync and async choices
     """
 
     @abstractmethod
@@ -19,15 +20,18 @@ class AbstractTokenManager(ABC):
         """
         Generates a new authentication token based on provided user data.
 
-        This method should encapsulate the logic for creating a valid token,
-        including signing, encryption, and embedding necessary claims (like user ID, roles).
+        This method encapsulates the logic for creating a valid token, including
+        signing, encryption, and embedding necessary claims (like user ID, roles).
+        The generated token is a string representation suitable for transmission
+        and subsequent validation.
 
         Args:
-            user_data: A dictionary containing data about the user for whom the token is being generated.
-                       This typically includes `user_id`, `username`, `roles`, etc.
+            user_data (dict[str, Any]): A dictionary containing data about the user for whom
+                                       the token is being generated. This typically includes
+                                       `user_id`, `username`, `roles`, etc.
 
         Returns:
-            A string representing the newly generated authentication token.
+            str: A string representing the newly generated authentication token.
         """
         pass
 
@@ -36,15 +40,16 @@ class AbstractTokenManager(ABC):
         """
         Validates an authentication token and extracts the user information it contains.
 
-        This method should verify the token's signature, expiration, and other claims.
-        If validation fails, it should raise an appropriate authentication error.
+        This method verifies the token's signature, expiration, and other claims.
+        If validation fails (e.g., the token is invalid, expired, or malformed),
+        it raises an `AuthenticationError`.
 
         Args:
-            token: The authentication token string to validate.
+            token (str): The authentication token string to validate.
 
         Returns:
-            An object conforming to the `AuthToken` protocol, containing the validated
-            user's identity and roles.
+            AuthToken: An object conforming to the `AuthToken` protocol, containing the validated
+                       user's identity and roles.
 
         Raises:
             AuthenticationError: If the token is invalid, expired, malformed, or otherwise
@@ -57,18 +62,19 @@ class AbstractTokenManager(ABC):
         """
         Refreshes an existing authentication token, typically extending its validity period.
 
-        This is often used with refresh tokens to obtain a new access token without
-        requiring the user to re-authenticate.
+        This method is often used with refresh tokens to obtain a new access token
+        without requiring the user to re-authenticate. It handles the logic for
+        generating a new, valid token based on the provided existing token.
 
         Args:
-            token: The existing token string to be refreshed. This might be an access token
-                   or a dedicated refresh token, depending on the authentication scheme.
+            token (str): The existing token string to be refreshed. This might be an access token
+                         or a dedicated refresh token, depending on the authentication scheme.
 
         Returns:
-            A new, refreshed token string.
+            str: A new, refreshed token string.
 
         Raises:
-            AuthenticationError: If the token cannot be refreshed (e.g., invalid, expired refresh token).
+            AuthenticationError: If the token cannot be refreshed (e.g., invalid or expired refresh token).
         """
         pass
 
@@ -77,12 +83,16 @@ class AbstractTokenManager(ABC):
         """
         Revokes an authentication token, making it invalid for future use.
 
-        This is typically used when a user logs out or when a token is compromised.
+        This method is typically used when a user logs out or when a token is compromised.
+        It ensures that the specified token can no longer be used for authentication or authorization.
 
         Args:
-            token: The token string to be revoked.
+            token (str): The token string to be revoked.
+
+        Returns:
+            None: This method does not return a value; it raises an exception on failure.
 
         Raises:
-            AuthenticationError: If the token cannot be revoked (e.g., it does not exist).
+            AuthenticationError: If the token cannot be revoked (e.g., it does not exist or is already invalid).
         """
         pass

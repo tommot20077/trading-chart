@@ -2,7 +2,7 @@
 # ABOUTME: Tests inheritance, instantiation, and basic functionality of CoreSettings
 
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from core.config.settings import CoreSettings, get_settings
 from core.config._base import BaseCoreSettings
 
@@ -15,7 +15,7 @@ class TestCoreSettings:
     def test_coresettings_inheritance(self):
         """Test that CoreSettings properly inherits from BaseCoreSettings."""
         settings = CoreSettings()
-        
+
         # Should inherit all fields from BaseCoreSettings
         assert hasattr(settings, "APP_NAME")
         assert hasattr(settings, "ENV")
@@ -23,7 +23,7 @@ class TestCoreSettings:
         assert hasattr(settings, "LOG_LEVEL")
         assert hasattr(settings, "LOG_FORMAT")
         assert hasattr(settings, "TIMEZONE")
-        
+
         # Should have the same default values
         assert settings.APP_NAME == "TradingChart"
         assert settings.ENV == "development"
@@ -50,9 +50,9 @@ class TestCoreSettings:
             DEBUG=True,
             LOG_LEVEL="ERROR",
             LOG_FORMAT="json",
-            TIMEZONE="Asia/Tokyo"
+            TIMEZONE="Asia/Tokyo",
         )
-        
+
         assert settings.APP_NAME == "CustomApp"
         assert settings.ENV == "production"
         assert settings.DEBUG is True
@@ -67,11 +67,11 @@ class TestCoreSettings:
         # Test case-insensitive ENV validation
         settings = CoreSettings(ENV="prod")
         assert settings.ENV == "production"
-        
+
         # Test case-insensitive LOG_LEVEL validation
         settings = CoreSettings(LOG_LEVEL="debug")
         assert settings.LOG_LEVEL == "DEBUG"
-        
+
         # Test case-insensitive LOG_FORMAT validation
         settings = CoreSettings(LOG_FORMAT="structured")
         assert settings.LOG_FORMAT == "json"
@@ -81,13 +81,13 @@ class TestCoreSettings:
     def test_coresettings_invalid_values(self):
         """Test that CoreSettings validation raises errors for invalid values."""
         from pydantic import ValidationError
-        
+
         with pytest.raises(ValidationError):
             CoreSettings(ENV="invalid_env")
-            
+
         with pytest.raises(ValidationError):
             CoreSettings(LOG_LEVEL="invalid_level")
-            
+
         with pytest.raises(ValidationError):
             CoreSettings(LOG_FORMAT="invalid_format")
 
@@ -96,14 +96,11 @@ class TestCoreSettings:
     def test_coresettings_environment_variable_loading(self):
         """Test that CoreSettings loads from environment variables."""
         import os
-        
-        with patch.dict(os.environ, {
-            "APP_NAME": "EnvApp",
-            "ENV": "staging",
-            "DEBUG": "true",
-            "LOG_LEVEL": "warning",
-            "LOG_FORMAT": "json"
-        }):
+
+        with patch.dict(
+            os.environ,
+            {"APP_NAME": "EnvApp", "ENV": "staging", "DEBUG": "true", "LOG_LEVEL": "warning", "LOG_FORMAT": "json"},
+        ):
             settings = CoreSettings()
             assert settings.APP_NAME == "EnvApp"
             assert settings.ENV == "staging"
@@ -116,11 +113,11 @@ class TestCoreSettings:
     def test_coresettings_model_config_inheritance(self):
         """Test that CoreSettings inherits model configuration from BaseCoreSettings."""
         settings = CoreSettings()
-        
+
         # Check that model_config is properly inherited
         assert hasattr(settings, "model_config")
         config = settings.model_config
-        
+
         # Should inherit configuration from BaseCoreSettings
         assert config.get("env_file") == ".env"
         assert config.get("env_file_encoding") == "utf-8"
@@ -131,19 +128,15 @@ class TestCoreSettings:
     @pytest.mark.config
     def test_coresettings_serialization(self):
         """Test CoreSettings serialization to dict and JSON."""
-        settings = CoreSettings(
-            APP_NAME="TestApp",
-            ENV="production",
-            DEBUG=True
-        )
-        
+        settings = CoreSettings(APP_NAME="TestApp", ENV="production", DEBUG=True)
+
         # Test dict serialization
         settings_dict = settings.model_dump()
         assert isinstance(settings_dict, dict)
         assert settings_dict["APP_NAME"] == "TestApp"
         assert settings_dict["ENV"] == "production"
         assert settings_dict["DEBUG"] is True
-        
+
         # Test JSON serialization
         json_str = settings.model_dump_json()
         assert isinstance(json_str, str)
@@ -155,11 +148,11 @@ class TestCoreSettings:
     def test_coresettings_field_access(self):
         """Test accessing CoreSettings fields and metadata."""
         settings = CoreSettings()
-        
+
         # Test field access
         assert settings.APP_NAME == "TradingChart"
         assert settings.ENV == "development"
-        
+
         # Test field metadata access
         fields = CoreSettings.model_fields
         assert "APP_NAME" in fields
@@ -172,16 +165,16 @@ class TestCoreSettings:
         """Test that CoreSettings can be extended following the documented pattern."""
         # This tests the pattern shown in the docstring
         from pydantic import Field
-        
+
         class ExtendedSettings(CoreSettings):
             CUSTOM_FIELD: str = Field(default="custom_value", description="Custom field for testing")
-        
+
         settings = ExtendedSettings()
-        
+
         # Should have all base fields
         assert settings.APP_NAME == "TradingChart"
         assert settings.ENV == "development"
-        
+
         # Should have custom field
         assert settings.CUSTOM_FIELD == "custom_value"
 
@@ -191,11 +184,11 @@ class TestCoreSettings:
         """Test CoreSettings field assignment behavior."""
         settings = CoreSettings()
         original_app_name = settings.APP_NAME
-        
+
         # Test field assignment (should work in Pydantic v2 by default)
         settings.APP_NAME = "Modified"
         assert settings.APP_NAME == "Modified"
-        
+
         # Reset for other tests
         settings.APP_NAME = original_app_name
 
@@ -217,7 +210,7 @@ class TestGetSettingsFunction:
         """Test get_settings() with clean cache state."""
         # Clear the cache first
         get_settings.cache_clear()
-        
+
         settings = get_settings()
         assert isinstance(settings, CoreSettings)
         assert settings.APP_NAME == "TradingChart"
@@ -227,10 +220,10 @@ class TestGetSettingsFunction:
     def test_get_settings_function_signature(self):
         """Test get_settings() function signature and return type annotation."""
         import inspect
-        
+
         sig = inspect.signature(get_settings)
         assert len(sig.parameters) == 0  # No parameters
-        
+
         # Check return type annotation
         assert sig.return_annotation == CoreSettings
 
@@ -239,14 +232,11 @@ class TestGetSettingsFunction:
     def test_get_settings_with_environment_variables(self):
         """Test get_settings() with environment variables."""
         import os
-        
+
         # Clear cache before test
         get_settings.cache_clear()
-        
-        with patch.dict(os.environ, {
-            "APP_NAME": "FunctionTestApp",
-            "ENV": "production"
-        }):
+
+        with patch.dict(os.environ, {"APP_NAME": "FunctionTestApp", "ENV": "production"}):
             settings = get_settings()
             assert settings.APP_NAME == "FunctionTestApp"
             assert settings.ENV == "production"
@@ -257,11 +247,11 @@ class TestGetSettingsFunction:
         """Test basic caching behavior of get_settings()."""
         # Clear cache
         get_settings.cache_clear()
-        
+
         # Get settings twice
         settings1 = get_settings()
         settings2 = get_settings()
-        
+
         # Should be the same instance due to caching
         assert settings1 is settings2
 
@@ -271,20 +261,20 @@ class TestGetSettingsFunction:
         """Test cache info functionality."""
         # Clear cache
         get_settings.cache_clear()
-        
+
         # Check initial cache info
         cache_info = get_settings.cache_info()
         assert cache_info.hits == 0
         assert cache_info.misses == 0
         assert cache_info.currsize == 0
-        
+
         # Call function once
         get_settings()
         cache_info = get_settings.cache_info()
         assert cache_info.hits == 0
         assert cache_info.misses == 1
         assert cache_info.currsize == 1
-        
+
         # Call function again
         get_settings()
         cache_info = get_settings.cache_info()
@@ -298,14 +288,14 @@ class TestGetSettingsFunction:
         """Test cache clearing functionality."""
         # Get settings to populate cache
         get_settings()
-        
+
         # Verify cache is populated
         cache_info = get_settings.cache_info()
         assert cache_info.currsize == 1
-        
+
         # Clear cache
         get_settings.cache_clear()
-        
+
         # Verify cache is cleared
         cache_info = get_settings.cache_info()
         assert cache_info.currsize == 0
@@ -319,7 +309,7 @@ class TestGlobalSettingsInstance:
     def test_global_settings_instance_exists(self):
         """Test that global settings instance is properly defined."""
         from core.config.settings import settings
-        
+
         assert settings is not None
         assert isinstance(settings, CoreSettings)
         assert isinstance(settings, BaseCoreSettings)
@@ -329,7 +319,7 @@ class TestGlobalSettingsInstance:
     def test_global_settings_instance_values(self):
         """Test that global settings instance has correct values."""
         from core.config.settings import settings
-        
+
         # Should have default values (unless overridden by environment)
         assert isinstance(settings.APP_NAME, str)
         assert settings.ENV in ["development", "staging", "production"]
@@ -343,10 +333,10 @@ class TestGlobalSettingsInstance:
     def test_global_settings_is_from_get_settings(self):
         """Test that global settings instance comes from get_settings()."""
         from core.config.settings import settings
-        
+
         # Global settings should be a CoreSettings instance
         assert isinstance(settings, CoreSettings)
-        
+
         # Should have the same configuration as get_settings() returns
         function_settings = get_settings()
         assert settings.APP_NAME == function_settings.APP_NAME
@@ -362,11 +352,11 @@ class TestGlobalSettingsInstance:
         """Test that global settings can be imported and used."""
         # This simulates how other modules would import settings
         from core.config.settings import settings
-        
+
         # Should be usable immediately
         app_name = settings.APP_NAME
         assert isinstance(app_name, str)
-        
+
         # Should be able to access all fields
         assert hasattr(settings, "ENV")
         assert hasattr(settings, "DEBUG")

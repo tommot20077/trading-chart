@@ -2,7 +2,7 @@ from typing import Any
 
 from pydantic import Field
 
-from core.models.data.base import BaseEvent
+from core.models.data.event import BaseEvent
 from core.models.data.trade import Trade
 from core.models.event.event_type import EventType
 
@@ -27,4 +27,9 @@ class TradeEvent(BaseEvent[Trade]):
         """
         # Always force event_type to TRADE regardless of input
         data["event_type"] = EventType.TRADE
+
+        # Handle the 'trade' parameter and set it as 'data' for BaseEvent
+        if "trade" in data:
+            data["data"] = data.pop("trade")
+
         super().__init__(**data)

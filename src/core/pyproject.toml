@@ -6,10 +6,11 @@ build-backend = "setuptools.build_meta"
 name = "trading-chart-core"
 version = "0.1.0"
 description = "Core library for trading systems, including abstractions and utilities."
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
+    "loguru>=0.7.0",
 ]
 
 [tool.importlinter]
@@ -19,8 +20,8 @@ root_packages = ["core"]
 name = "Core module dependency layers"
 type = "layers"
 layers = [
-    "core.implementations",
+    "core.implementations | core.components",
     "core.interfaces",
-    "core.models",
+    "core.models | core.exceptions",
     "core.config",
 ]

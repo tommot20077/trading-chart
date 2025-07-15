@@ -1,0 +1,35 @@
+# ABOUTME: Pull Request 依賴項審查工作流程
+# ABOUTME: 在 PR 中檢查依賴項變更的安全性和授權合規性
+
+name: Dependency Review
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  pull_request_target:
+    branches: [ main, develop ]
+
+jobs:
+  dependency-review:
+    name: 依賴項審查
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+      
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: 🔍 Run Dependency Review
+      uses: actions/dependency-review-action@v4
+      with:
+        fail-on-severity: high
+        allow-licenses: MIT, Apache-2.0, BSD-3-Clause, BSD-2-Clause, ISC, MPL-2.0
+        comment-summary-in-pr: true
+        deny-licenses: GPL-2.0, GPL-3.0, AGPL-1.0, AGPL-3.0
+        vulnerability-check: true
+        license-check: true
+        config-file: .github/dependency-review-config.yml

@@ -19,16 +19,17 @@ class AbstractAuthorizer(ABC):
         """
         Checks if the user associated with the given token has a specific permission.
 
-        This method use permission formats:
-        - Permission enum (e.g., Permission.READ)
-
-        If the user does not possess the required permission, an authorization
-        failure exception should be raised.
+        This asynchronous method determines if the authenticated user, represented by the
+        `AuthToken`, possesses the specified `Permission`. If the user lacks the
+        required permission, an `AuthorizationError` is raised, preventing unauthorized
+        access or operations.
 
         Args:
-            token: The `AuthToken` representing the authenticated user.
-            permission: The permission to check. Can be:
-                - Permission enum value (e.g., Permission.READ)
+            token (AuthToken): The `AuthToken` representing the authenticated user.
+            permission (Permission): The specific permission to check (e.g., `Permission.READ`).
+
+        Returns:
+            None: This method does not return a value; it raises an exception on failure.
 
         Raises:
             AuthorizationError: If the user does not have the specified permission.
@@ -40,13 +41,17 @@ class AbstractAuthorizer(ABC):
         """
         Checks if the user associated with the given token has a specific role.
 
-        If the user does not possess the required role, an authorization
-        failure exception should be raised.
+        This asynchronous method verifies if the authenticated user, identified by the
+        `AuthToken`, is assigned the specified `Role`. If the user does not possess
+        the required role, an `AuthorizationError` is raised, ensuring role-based
+        access control.
 
         Args:
-            token: The `AuthToken` representing the authenticated user.
-            role: The specific role enum value to check. Can be:
-                - Role enum value (e.g., Role.ADMIN)
+            token (AuthToken): The `AuthToken` representing the authenticated user.
+            role (Role): The specific role enum value to check (e.g., `Role.ADMIN`).
+
+        Returns:
+            None: This method does not return a value; it raises an exception on failure.
 
         Raises:
             AuthorizationError: If the user does not have the specified role.

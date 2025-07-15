@@ -35,14 +35,14 @@ class AbstractDataConverter(ABC):
         like price, quantity, timestamp, trade ID, and buyer/seller information.
 
         Args:
-            raw_trade: A dictionary containing the raw trade data as received directly
-                       from the exchange's API. The exact keys and values within this
-                       dictionary are specific to each exchange.
-            symbol: The trading symbol (e.g., "BTC/USDT", "ETH/USD") for which the trade occurred.
-                    This ensures the converted `Trade` model is correctly associated with its asset.
+            raw_trade (dict[str, Any]): A dictionary containing the raw trade data as received directly
+                                       from the exchange's API. The exact keys and values within this
+                                       dictionary are specific to each exchange.
+            symbol (str): The trading symbol (e.g., "BTCUSDT", "ETHUSD") for which the trade occurred.
+                          This ensures the converted `Trade` model is correctly associated with its asset.
 
         Returns:
-            A standardized `Trade` model instance, populated with normalized data.
+            Trade: A standardized `Trade` model instance, populated with normalized data.
 
         Raises:
             ValueError: If the `raw_trade` data is malformed, missing critical fields,
@@ -62,12 +62,12 @@ class AbstractDataConverter(ABC):
         optimized for batch processing of historical or streaming trade data.
 
         Args:
-            raw_trades: A list of dictionaries, where each dictionary contains raw trade data
-                        from the exchange.
-            symbol: The trading symbol for which the trades occurred.
+            raw_trades (list[dict[str, Any]]): A list of dictionaries, where each dictionary contains raw trade data
+                                              from the exchange.
+            symbol (str): The trading symbol (e.g., "BTCUSDT", "ETHUSD") for which the trades occurred.
 
         Returns:
-            A list of standardized `Trade` model instances.
+            list[Trade]: A list of standardized `Trade` model instances.
 
         Raises:
             ValueError: If any raw trade data in the list is malformed or missing critical fields.
@@ -85,12 +85,12 @@ class AbstractDataConverter(ABC):
         model's consistent structure.
 
         Args:
-            raw_kline: A dictionary containing the raw K-line data as received from the exchange.
-                       The structure of this dictionary is exchange-specific.
-            symbol: The trading symbol for which the K-line occurred.
+            raw_kline (dict[str, Any]): A dictionary containing the raw K-line data as received from the exchange.
+                                       The structure of this dictionary is exchange-specific.
+            symbol (str): The trading symbol (e.g., "BTCUSDT", "ETHUSD") for which the K-line occurred.
 
         Returns:
-            A standardized `Kline` model instance.
+            Kline: A standardized `Kline` model instance.
 
         Raises:
             ValueError: If the `raw_kline` data is malformed, missing critical fields,
@@ -109,12 +109,12 @@ class AbstractDataConverter(ABC):
         candlestick data in batches.
 
         Args:
-            raw_klines: A list of dictionaries, where each dictionary contains raw K-line data
-                        from the exchange.
-            symbol: The trading symbol for which the K-lines occurred.
+            raw_klines (list[dict[str, Any]]): A list of dictionaries, where each dictionary contains raw K-line data
+                                              from the exchange.
+            symbol (str): The trading symbol (e.g., "BTCUSDT", "ETHUSD") for which the K-lines occurred.
 
         Returns:
-            A list of standardized `Kline` model instances.
+            list[Kline]: A list of standardized `Kline` model instances.
 
         Raises:
             ValueError: If any raw K-line data in the list is malformed or missing critical fields.
@@ -133,15 +133,15 @@ class AbstractDataConverter(ABC):
         downstream processing errors.
 
         Args:
-            data: The raw data to validate. The type of this data is flexible,
-                  as indicated by `RawDataType`, allowing validation of various
-                  input structures (e.g., a single trade dict, a list of klines).
+            data (RawDataType): The raw data to validate. The type of this data is flexible,
+                                as indicated by `RawDataType`, allowing validation of various
+                                input structures (e.g., a single trade dict, a list of klines).
 
         Returns:
-            A tuple where the first element is `True` if the data is considered valid
-            according to the converter's rules, and `False` otherwise. The second
-            element is an informative error message (string) if validation fails,
-            or an empty string (`""`) if validation succeeds.
+            tuple[bool, str]: A tuple where the first element is `True` if the data is considered valid
+                              according to the converter's rules, and `False` otherwise. The second
+                              element is an informative error message (string) if validation fails,
+                              or an empty string (`""`) if validation succeeds.
         """
         pass
 
@@ -156,11 +156,11 @@ class AbstractDataConverter(ABC):
         which is crucial for consistent time-series analysis and storage within `asset_core`.
 
         Args:
-            timestamp: The timestamp value from the exchange. This can be an integer,
-                       float, or string, depending on the exchange's API and the raw data.
+            timestamp (Any): The timestamp value from the exchange. This can be an integer,
+                             float, or string, depending on the exchange's API and the raw data.
 
         Returns:
-            An integer representing the Unix timestamp in milliseconds.
+            int: An integer representing the Unix timestamp in milliseconds.
 
         Raises:
             ValueError: If the provided timestamp format is unrecognized, cannot be parsed,

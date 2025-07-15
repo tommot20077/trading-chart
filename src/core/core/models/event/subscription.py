@@ -1,7 +1,7 @@
 import asyncio
 from typing import Callable, Awaitable
 
-from core.models.data.base import BaseEvent
+from core.models.data.event import BaseEvent
 from core.models.event.event_type import EventType
 
 EventHandler = Callable[[BaseEvent], None]  # Type alias for a synchronous event handler function.

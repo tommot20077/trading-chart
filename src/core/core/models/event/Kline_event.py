@@ -2,7 +2,7 @@ from typing import Any
 
 from pydantic import Field
 
-from core.models.data.base import BaseEvent
+from core.models.data.event import BaseEvent
 from core.models.data.kline import Kline
 from core.models.event.event_type import EventType
 
@@ -27,4 +27,9 @@ class KlineEvent(BaseEvent[Kline]):
         """
         # Always force event_type to KLINE regardless of input
         data["event_type"] = EventType.KLINE
+
+        # Handle the 'kline' parameter and set it as 'data' for BaseEvent
+        if "kline" in data:
+            data["data"] = data.pop("kline")
+
         super().__init__(**data)

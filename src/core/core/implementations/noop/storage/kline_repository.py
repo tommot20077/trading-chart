@@ -1,0 +1,287 @@
+# ABOUTME: NoOp implementation of AbstractKlineRepository that provides fake storage
+# ABOUTME: Provides minimal Kline storage functionality for testing scenarios
+
+from typing import Any, AsyncIterator
+from datetime import datetime
+
+from core.interfaces.storage.Kline_repository import AbstractKlineRepository
+from core.models import KlineInterval, Kline
+from core.models.storage.query_option import QueryOptions
+
+
+class NoOpKlineRepository(AbstractKlineRepository):
+    """
+    No-operation implementation of AbstractKlineRepository.
+
+    This implementation provides minimal Kline storage functionality that
+    simulates storage operations without actually persisting data. It's useful
+    for testing, performance benchmarking, and scenarios where Kline storage
+    is not required.
+
+    Features:
+    - Simulates successful storage operations
+    - No actual data persistence
+    - Minimal resource usage
+    - Fast execution
+    - No side effects
+
+    Use Cases:
+    - Testing environments where storage should be bypassed
+    - Performance benchmarking without storage overhead
+    - Development environments where storage is not needed
+    - Fallback when storage systems are unavailable
+    """
+
+    def __init__(self):
+        """Initialize the no-operation Kline repository."""
+        self._closed = False
+        self._kline_count = 0  # Track number of "stored" klines for stats
+
+    async def save(self, kline: Kline) -> None:
+        """
+        Save a single kline - simulates storage without persistence.
+
+        This implementation simulates successful storage without actually
+        persisting the data.
+
+        Args:
+            kline: The kline to store (ignored)
+        """
+        if self._closed:
+            raise RuntimeError("Kline repository is closed")
+
+        self._kline_count += 1
+
+    async def save_batch(self, klines: list[Kline]) -> int:
+        """
+        Save multiple klines - simulates batch storage.
+
+        This implementation simulates successful batch storage.
+
+        Args:
+            klines: List of klines to store
+
+        Returns:
+            Number of klines "stored" (length of input list)
+        """
+        if self._closed:
+            raise RuntimeError("Kline repository is closed")
+
+        count = len(klines)
+        self._kline_count += count
+        return count
+
+    async def query(
+        self,
+        symbol: str,
+        interval: KlineInterval,
+        start_time: datetime,
+        end_time: datetime,
+        *,
+        options: QueryOptions | None = None,
+    ) -> list[Kline]:
+        """
+        Query klines - always returns empty list (no data stored).
+
+        This implementation always returns an empty list since no data
+        is actually stored.
+
+        Args:
+            symbol: Trading symbol
+            interval: Kline interval
+            start_time: Start time for query
+            end_time: End time for query
+            options: Optional query options
+
+        Returns:
+            Empty list (no data is actually stored)
+        """
+        if self._closed:
+            raise RuntimeError("Kline repository is closed")
+
+        return []
+
+    async def stream(
+        self,
+        symbol: str,
+        interval: KlineInterval,
+        start_time: datetime,
+        end_time: datetime,
+        *,
+        batch_size: int = 1000,
+    ) -> AsyncIterator[Kline]:
+        """
+        Stream klines - yields nothing (no data stored).
+
+        This implementation yields nothing since no data is actually stored.
+
+        Args:
+            symbol: Trading symbol
+            interval: Kline interval
+            start_time: Start time for streaming
+            end_time: End time for streaming
+            batch_size: Batch size for streaming
+
+        Yields:
+            Nothing (no data is actually stored)
+        """
+        if self._closed:
+            raise RuntimeError("Kline repository is closed")
+
+        # Empty async generator
+        return
+        yield  # This line is unreachable but needed for type checking
+
+    async def get_latest(self, symbol: str, interval: KlineInterval) -> Kline | None:
+        """
+        Get latest kline - always returns None (no data stored).
+
+        This implementation always returns None since no data is actually stored.
+
+        Args:
+            symbol: Trading symbol
+            interval: Kline interval
+
+        Returns:
+            None (no data is actually stored)
+        """
+        if self._closed:
+            raise RuntimeError("Kline repository is closed")
+
+        return None
+
+    async def get_oldest(self, symbol: str, interval: KlineInterval) -> Kline | None:
+        """
+        Get oldest kline - always returns None (no data stored).
+
+        This implementation always returns None since no data is actually stored.
+
+        Args:
+            symbol: Trading symbol
+            interval: Kline interval
+
+        Returns:
+            None (no data is actually stored)
+        """
+        if self._closed:
+            raise RuntimeError("Kline repository is closed")
+
+        return None
+
+    async def count(
+        self,
+        symbol: str,
+        interval: KlineInterval,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+    ) -> int:
+        """
+        Count klines - returns 0 (no data stored).
+
+        This implementation returns 0 since no data is actually stored.
+
+        Args:
+            symbol: Trading symbol
+            interval: Kline interval
+            start_time: Optional start time
+            end_time: Optional end time
+
+        Returns:
+            0 (no data is actually stored)
+        """
+        if self._closed:
+            raise RuntimeError("Kline repository is closed")
+
+        return 0
+
+    async def delete(
+        self,
+        symbol: str,
+        interval: KlineInterval,
+        start_time: datetime,
+        end_time: datetime,
+    ) -> int:
+        """
+        Delete klines - returns 0 (no data to delete).
+
+        This implementation returns 0 since no data is actually stored.
+
+        Args:
+            symbol: Trading symbol
+            interval: Kline interval
+            start_time: Start time for deletion
+            end_time: End time for deletion
+
+        Returns:
+            0 (no data is actually stored to delete)
+        """
+        if self._closed:
+            raise RuntimeError("Kline repository is closed")
+
+        return 0
+
+    async def get_gaps(
+        self,
+        symbol: str,
+        interval: KlineInterval,
+        start_time: datetime,
+        end_time: datetime,
+    ) -> list[tuple[datetime, datetime]]:
+        """
+        Find gaps - returns empty list (no data stored).
+
+        This implementation returns an empty list since no data is stored.
+
+        Args:
+            symbol: Trading symbol
+            interval: Kline interval
+            start_time: Start time for gap analysis
+            end_time: End time for gap analysis
+
+        Returns:
+            Empty list (no data is actually stored)
+        """
+        if self._closed:
+            raise RuntimeError("Kline repository is closed")
+
+        return []
+
+    async def get_statistics(
+        self,
+        symbol: str,
+        interval: KlineInterval,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+    ) -> dict[str, Any]:
+        """
+        Get statistics - returns fake statistics.
+
+        This implementation returns fake statistics.
+
+        Args:
+            symbol: Trading symbol
+            interval: Kline interval
+            start_time: Optional start time
+            end_time: Optional end time
+
+        Returns:
+            Fake statistics dictionary
+        """
+        if self._closed:
+            raise RuntimeError("Kline repository is closed")
+
+        return {
+            "total_klines": 0,
+            "symbol": symbol,
+            "interval": interval.value,
+            "start_time": start_time.isoformat() if start_time else None,
+            "end_time": end_time.isoformat() if end_time else None,
+            "fake_stat": "noop_implementation",
+        }
+
+    async def close(self) -> None:
+        """
+        Close the repository - sets closed flag and resets counters.
+        """
+        self._closed = True
+        self._kline_count = 0

@@ -2,7 +2,7 @@ from typing import Any
 
 from pydantic import Field
 
-from core.models.data.base import BaseEvent
+from core.models.data.event import BaseEvent
 from core.models.event import EventPriority
 from core.models.event.event_type import EventType
 
@@ -39,4 +39,5 @@ class ErrorEvent(BaseEvent[dict[str, Any]]):
         if "priority" not in data:
             data["priority"] = EventPriority.HIGH
         data["data"] = event_data
+
         super().__init__(**data)
