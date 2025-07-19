@@ -172,12 +172,17 @@ def setup_otel_logging(trace_id_key: str = "trace_id", span_id_key: str = "span_
 
         def add_trace_info(record) -> None:
             """Add trace information to log records."""
-            span = trace.get_current_span()
-            if span != trace.INVALID_SPAN:
-                span_context = span.get_span_context()
-                if span_context.is_valid:
-                    record["extra"][trace_id_key] = f"{span_context.trace_id:032x}"
-                    record["extra"][span_id_key] = f"{span_context.span_id:016x}"
+            try:
+                span = trace.get_current_span()
+                if span != trace.INVALID_SPAN:
+                    span_context = span.get_span_context()
+                    if span_context.is_valid:
+                        record["extra"][trace_id_key] = f"{span_context.trace_id:032x}"
+                        record["extra"][span_id_key] = f"{span_context.span_id:016x}"
+            except Exception:
+                # Silently ignore any OpenTelemetry-related errors to prevent
+                # logging from breaking when there are issues with tracing
+                pass
 
         # Configure loguru to add trace information
         logger.configure(patcher=add_trace_info)
@@ -200,8 +205,19 @@ def get_logger(name: str):
 
 
 def configure_for_testing() -> None:
-    """Configure logging for testing environment."""
+    """
+    Configure logging for testing environment.
+
+    This configuration is optimized to avoid conflicts with pytest-asyncio:
+    - Synchronous logging (enqueue=False) to avoid background threads
+    - Minimal exception handling (catch=False) to avoid complex teardown
+    - Simple output format to reduce processing overhead
+    """
+    # Remove all existing handlers first
     logger.remove()
+
+    # Add a simple synchronous handler for tests
+    # This avoids the threading issues that cause pytest-asyncio conflicts
     logger.add(
         sys.stdout,
         level="DEBUG",
@@ -209,8 +225,8 @@ def configure_for_testing() -> None:
         colorize=True,
         backtrace=False,
         diagnose=False,
-        enqueue=False,
-        catch=False,
+        enqueue=False,  # CRITICAL: No background threads
+        catch=False,  # CRITICAL: No exception handling complexity
     )
 
 

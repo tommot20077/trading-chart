@@ -24,6 +24,7 @@ class MiddlewareContext(BaseModel, Generic[T]):
 
     # Request/Event related information
     request_id: Optional[str] = Field(default=None, description="Request identifier for tracing")
+    event_id: Optional[str] = Field(default=None, description="Event identifier")
     event_type: Optional[str] = Field(default=None, description="Type of event being processed")
     symbol: Optional[str] = Field(default=None, description="Trading symbol if applicable")
 
@@ -90,3 +91,83 @@ class MiddlewareContext(BaseModel, Generic[T]):
         data["id"] = str(uuid4())
         data["timestamp"] = datetime.now(UTC)
         return MiddlewareContext[T](**data)
+
+    # Data manipulation methods
+    def set_data(self, key: str, value: Any) -> None:
+        """
+        Set a data value in the context.
+
+        Args:
+            key: The data key
+            value: The data value
+        """
+        if not hasattr(self, "_context_data"):
+            self._context_data = {}
+        self._context_data[key] = value
+
+    def get_data(self, key: str, default: Any = None) -> Any:
+        """
+        Get a data value from the context.
+
+        Args:
+            key: The data key
+            default: Default value if key not found
+
+        Returns:
+            The data value or default
+        """
+        if not hasattr(self, "_context_data"):
+            self._context_data = {}
+        return self._context_data.get(key, default)
+
+    def get_all_data(self) -> Dict[str, Any]:
+        """
+        Get all data from the context.
+
+        Returns:
+            Dictionary of all context data
+        """
+        if not hasattr(self, "_context_data"):
+            self._context_data = {}
+        return self._context_data.copy()
+
+    def set_metadata(self, key: str, value: Any) -> None:
+        """
+        Set a metadata value in the context.
+
+        Args:
+            key: The metadata key
+            value: The metadata value
+        """
+        self.metadata[key] = value
+
+    def get_metadata(self, key: str, default: Any = None) -> Any:
+        """
+        Get a metadata value from the context.
+
+        Args:
+            key: The metadata key
+            default: Default value if key not found
+
+        Returns:
+            The metadata value or default
+        """
+        return self.metadata.get(key, default)
+
+    def get_all_metadata(self) -> Dict[str, Any]:
+        """
+        Get all metadata from the context.
+
+        Returns:
+            Dictionary of all context metadata
+        """
+        return self.metadata.copy()
+
+    def get_execution_path(self) -> List[str]:
+        """
+        Get the execution path of middleware.
+
+        Returns:
+            List of middleware names that have been executed
+        """
+        return self.execution_path.copy()

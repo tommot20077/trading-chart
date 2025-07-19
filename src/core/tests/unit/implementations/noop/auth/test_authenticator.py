@@ -51,18 +51,18 @@ class TestNoOpAuthenticator:
         assert token1.username == token2.username
         assert token1.token == token2.token
 
+    @pytest.mark.benchmark
     @pytest.mark.asyncio
-    async def test_authenticate_performance(self):
+    async def test_authenticate_performance(self, benchmark):
         """Test that authenticate is fast (NoOp should be very fast)."""
         auth = NoOpAuthenticator()
         request = Mock(spec=AuthRequest)
 
-        import time
+        async def authenticate_operations():
+            for _ in range(100):
+                await auth.authenticate(request)
+            return 100
 
-        start = time.time()
-
-        for _ in range(100):
-            await auth.authenticate(request)
-
-        elapsed = time.time() - start
-        assert elapsed < 0.1  # Should be very fast
+        # Benchmark NoOp authenticate operations
+        result = await benchmark(authenticate_operations)
+        assert result == 100

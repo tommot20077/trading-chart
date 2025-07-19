@@ -320,14 +320,12 @@ class TestTimeoutException:
     """Test cases for TimeoutException."""
 
     @pytest.mark.unit
-    @pytest.mark.timeout(30)
     def test_timeout_exception_inheritance(self):
         """Test that TimeoutException inherits from CoreException."""
         exception = TimeoutException("operation timeout")
         assert isinstance(exception, CoreException)
 
     @pytest.mark.unit
-    @pytest.mark.timeout(30)
     @pytest.mark.external
     def test_timeout_exception_with_timeout_context(self):
         """Test TimeoutException with timeout-specific details."""
@@ -347,7 +345,6 @@ class TestExceptionHierarchy:
     """Test cases for exception hierarchy and relationships."""
 
     @pytest.mark.unit
-    @pytest.mark.timeout(30)
     def test_all_exceptions_inherit_from_core_exception(self):
         """Test that all custom exceptions inherit from CoreException."""
         exception_classes = [
@@ -369,7 +366,6 @@ class TestExceptionHierarchy:
             assert isinstance(exception, Exception)
 
     @pytest.mark.unit
-    @pytest.mark.timeout(30)
     def test_exception_class_names(self):
         """Test that exception class names follow naming conventions."""
         exception_classes = [

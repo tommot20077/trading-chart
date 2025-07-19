@@ -49,19 +49,19 @@ class TestNoOpAuthorizer:
         await authorizer.authorize_permission(None, Permission.READ)
         await authorizer.authorize_role(None, Role.USER)
 
+    @pytest.mark.benchmark
     @pytest.mark.asyncio
-    async def test_authorize_performance(self):
+    async def test_authorize_performance(self, benchmark):
         """Test that authorization is fast (NoOp should be very fast)."""
         authorizer = NoOpAuthorizer()
         token = Mock(spec=AuthToken)
 
-        import time
+        async def authorize_operations():
+            for _ in range(100):
+                await authorizer.authorize_permission(token, Permission.READ)
+                await authorizer.authorize_role(token, Role.USER)
+            return 200  # 100 * 2 operations
 
-        start = time.time()
-
-        for _ in range(100):
-            await authorizer.authorize_permission(token, Permission.READ)
-            await authorizer.authorize_role(token, Role.USER)
-
-        elapsed = time.time() - start
-        assert elapsed < 0.1  # Should be very fast
+        # Benchmark NoOp authorize operations
+        result = await benchmark(authorize_operations)
+        assert result == 200

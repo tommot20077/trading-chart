@@ -132,7 +132,7 @@ class MiddlewareResult(BaseModel):
         Returns:
             Dict[str, Any]: Summary containing key execution metrics.
         """
-        return {
+        summary = {
             "middleware_name": self.middleware_name,
             "status": self.status.value,
             "execution_time_ms": self.execution_time_ms,
@@ -140,7 +140,17 @@ class MiddlewareResult(BaseModel):
             "should_continue": self.should_continue,
             "has_error": self.error is not None,
             "has_data": self.data is not None,
+            "data": self.data,
+            "metadata": self.metadata,
         }
+
+        # Include error information if present
+        if self.error is not None:
+            summary["error"] = self.error
+        if self.error_details is not None:
+            summary["error_details"] = self.error_details
+
+        return summary
 
 
 class PipelineResult(BaseModel):

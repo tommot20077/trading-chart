@@ -89,7 +89,6 @@ class TestMiddlewareContext:
         assert context.execution_path == ["AuthMiddleware", "LoggingMiddleware", "RateLimitMiddleware"]
 
     @pytest.mark.unit
-    @pytest.mark.timeout(30)
     def test_cancel_context(self):
         """Test cancelling context."""
         context = MiddlewareContext()
@@ -102,7 +101,6 @@ class TestMiddlewareContext:
         assert context.is_cancelled is True
 
     @pytest.mark.unit
-    @pytest.mark.timeout(30)
     def test_get_execution_duration(self):
         """Test getting execution duration."""
         context = MiddlewareContext()

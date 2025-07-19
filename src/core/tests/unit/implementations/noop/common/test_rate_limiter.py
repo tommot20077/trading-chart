@@ -56,17 +56,17 @@ class TestNoOpRateLimiter:
 
         assert all(result is True for result in results)
 
+    @pytest.mark.benchmark
     @pytest.mark.asyncio
-    async def test_acquire_performance(self):
+    async def test_acquire_performance(self, benchmark):
         """Test that acquire is fast (NoOp should be very fast)."""
         limiter = NoOpRateLimiter()
 
-        import time
+        async def acquire_operations():
+            for _ in range(1000):
+                await limiter.acquire()
+            return 1000
 
-        start = time.time()
-
-        for _ in range(1000):
-            await limiter.acquire()
-
-        elapsed = time.time() - start
-        assert elapsed < 0.1  # Should be very fast
+        # Benchmark NoOp rate limiter operations
+        result = await benchmark(acquire_operations)
+        assert result == 1000

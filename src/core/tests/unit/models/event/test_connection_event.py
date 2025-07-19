@@ -89,7 +89,6 @@ class TestConnectionEvent:
         assert event.event_type == EventType.CONNECTION  # Should be CONNECTION, not TRADE
 
     @pytest.mark.unit
-    @pytest.mark.timeout(30)
     def test_connection_event_with_custom_priority(self):
         """
         Test ConnectionEvent creation with custom priority.
@@ -109,7 +108,6 @@ class TestConnectionEvent:
         assert event.data["status"] == ConnectionStatus.ERROR.value
 
     @pytest.mark.unit
-    @pytest.mark.timeout(30)
     @pytest.mark.external
     def test_connection_event_with_additional_data(self):
         """
@@ -291,7 +289,6 @@ class TestConnectionEvent:
             )
 
     @pytest.mark.unit
-    @pytest.mark.timeout(30)
     def test_connection_event_data_override_behavior(self):
         """
         Test ConnectionEvent data override behavior.
@@ -315,7 +312,6 @@ class TestConnectionEvent:
         assert event.data["additional_field"] == "preserved"  # Should be preserved
 
     @pytest.mark.unit
-    @pytest.mark.timeout(30)
     def test_connection_event_error_status_scenarios(self):
         """
         Test ConnectionEvent with ERROR status and error details.

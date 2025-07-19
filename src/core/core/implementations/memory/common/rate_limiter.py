@@ -245,4 +245,8 @@ class InMemoryRateLimiter(AbstractRateLimiter):
     def __del__(self):
         """Ensure cleanup on garbage collection."""
         if hasattr(self, "_cleanup_task") and self._cleanup_task and not self._cleanup_task.done():
-            self._cleanup_task.cancel()
+            try:
+                self._cleanup_task.cancel()
+            except RuntimeError:
+                # Event loop is closed, can't cancel the task
+                pass

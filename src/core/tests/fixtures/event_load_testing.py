@@ -2,12 +2,12 @@
 # ABOUTME: Provides load generators, metrics collectors, and test data factories
 
 import asyncio
-import time
 import random
 import statistics
 from typing import List, Dict, Any, Callable, Optional
 from datetime import datetime, UTC
 from dataclasses import dataclass, field
+import time
 
 from core.implementations.memory.event.event_bus import InMemoryEventBus
 from core.models.data.event import BaseEvent

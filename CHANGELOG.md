@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased - 2025-07-20 [eee4a58](https://github.com/tommot20077/trading-chart/commit/eee4a58f4d1a6c7b8e5e8f4d5a8c7b4e5e8f4d5a)
+
+### Added
+- **Comprehensive Integration Tests**: Added extensive integration test suites covering authentication, data processing, event systems, observability, and storage modules
+- **Enhanced Test Infrastructure**: Added test fixtures for performance monitoring and event load testing with comprehensive benchmarking capabilities
+- **Observability Testing Framework**: Complete observability integration tests with monitoring configuration and performance benchmarks
+- **Storage Integration Testing**: Cross-repository transaction tests and storage workflow integration with performance analysis
+- **Common Components Integration**: Added lifecycle, middleware pipeline, and rate limiter integration tests
+- **Event Type Extensions**: Added new event types (ALERT, MARKET_DATA) to support broader event handling scenarios
+
+### Changed
+- **Security Audit Schedule**: Modified security scanning from daily to every 3 days to optimize CI/CD resource usage
+- **Test Configuration**: Enhanced pytest configuration with timeout support and improved test markers for better test organization
+- **Test Timeout Settings**: Updated test timeout configurations with type-specific timeouts (unit: 20s, integration/contract/benchmark: 60s)
+- **Dependency Management**: Updated development dependencies with pytest-benchmark, pytest-timeout, and removed pytest-repeat
+- **GitHub Actions Security**: Improved supply chain security scanning with enhanced dependency summary generation
+
+### Fixed
+- **OpenTelemetry Logging Integration**: Enhanced error handling in OpenTelemetry trace information logging to prevent logging failures
+- **Rate Limiter Resource Management**: Improved cleanup task cancellation handling to prevent runtime errors during resource cleanup
+- **Notification Handler Concurrency**: Enhanced thread safety and cleanup procedures for notification handlers to prevent pytest-asyncio conflicts
+- **Test Environment Logging**: Optimized logging configuration for testing environment to avoid threading conflicts with pytest-asyncio
+- **NoOp Data Provider**: Fixed Kline generation to ensure proper time sequencing and interval handling for testing scenarios
+- **Middleware Context and Result Models**: Enhanced functionality with additional data manipulation methods and comprehensive summary information
+
+### Breaking Changes
+- **Test Markers and Timeouts**: Modified test markers and timeout settings may affect existing test workflows and CI/CD pipelines
+- **Dependency Changes**: Removed pytest-repeat dependency and restructured dev-dependencies may require environment updates
+
+### Performance Improvements
+- **Memory Management**: Optimized test fixtures and monitoring utilities for better memory usage during test execution
+- **Event Processing**: Enhanced event bus performance testing with comprehensive benchmarking and load testing capabilities
+- **Resource Monitoring**: Added CPU usage normalization and improved system resource monitoring for consistent metrics
+- **Test Execution**: Optimized test configuration for faster execution while maintaining comprehensive coverage
+
+### Documentation
+- **Test Documentation**: Enhanced test documentation with comprehensive integration test coverage and contract testing guidelines
+- **Performance Testing**: Added performance benchmarking documentation with baseline comparison capabilities
+- **Observability Documentation**: Complete observability testing framework documentation with monitoring best practices
+
+---
+
 ## Unreleased - 2025-07-17 [9c372b](https://github.com/tommot20077/trading-chart/commit/9c372bd52d2fc6a2ef6118e2e08a478ce4e548e9)
 
 ### Added

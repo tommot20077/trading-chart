@@ -238,14 +238,12 @@ class TestInMemoryEventBus:
         assert result is False
 
     @pytest.mark.unit
-    @pytest.mark.timeout(30)
     def test_unsubscribe_invalid_id(self, event_bus):
         """Test unsubscribing with invalid ID."""
         result = event_bus.unsubscribe("invalid-id")
         assert result is False
 
     @pytest.mark.unit
-    @pytest.mark.timeout(30)
     def test_unsubscribe_all(self, event_bus):
         """Test unsubscribing all handlers."""
         handler1 = Mock()

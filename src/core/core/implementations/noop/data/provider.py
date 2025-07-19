@@ -2,7 +2,7 @@
 # ABOUTME: Provides minimal data provider functionality for testing scenarios
 
 from typing import AsyncIterator, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from core.interfaces.data.provider import AbstractDataProvider
@@ -139,11 +139,15 @@ class NoOpDataProvider(AbstractDataProvider):
     def _create_fake_kline(self, symbol: str, interval: KlineInterval, index: int = 0) -> Kline:
         """Create a fake kline for testing."""
         now = datetime.now()
+        interval_duration = KlineInterval.to_timedelta(interval)
+        open_time = now + timedelta(seconds=index * interval_duration.total_seconds())
+        close_time = open_time + interval_duration
+
         return Kline(
             symbol=symbol,
             interval=interval,
-            open_time=now,
-            close_time=now,
+            open_time=open_time,
+            close_time=close_time,
             open_price=Decimal(f"{100 + index}.0"),
             high_price=Decimal(f"{105 + index}.0"),
             low_price=Decimal(f"{95 + index}.0"),
@@ -251,14 +255,23 @@ class NoOpDataProvider(AbstractDataProvider):
             raise RuntimeError("Data provider is closed")
 
         klines = []
-        now = datetime.now()
+        # Use start_time as base to ensure klines are within the requested range
+        interval_duration = KlineInterval.to_timedelta(interval)
+
         for i in range(min(limit, 10)):  # Return max 10 fake klines
+            open_time = start_time + timedelta(seconds=i * interval_duration.total_seconds())
+            close_time = open_time + interval_duration
+
+            # Stop if we exceed end_time
+            if open_time >= end_time:
+                break
+
             klines.append(
                 Kline(
                     symbol=symbol,
                     interval=interval,
-                    open_time=now,
-                    close_time=now,
+                    open_time=open_time,
+                    close_time=close_time,
                     open_price=Decimal(f"{100 + i}.0"),
                     high_price=Decimal(f"{105 + i}.0"),
                     low_price=Decimal(f"{95 + i}.0"),
@@ -268,7 +281,7 @@ class NoOpDataProvider(AbstractDataProvider):
                     trades_count=100 + i,
                     exchange="noop-exchange",
                     is_closed=True,
-                    received_at=now,
+                    received_at=datetime.now(),
                     taker_buy_volume=Decimal("500.0"),
                     taker_buy_quote_volume=Decimal("51000.0"),
                 )

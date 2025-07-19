@@ -46,7 +46,6 @@ class TestErrorEvent:
 
     @pytest.mark.unit
     @pytest.mark.external
-    @pytest.mark.timeout(30)
     def test_error_event_with_error_code(self):
         """
         Test ErrorEvent creation with both error message and error code.
@@ -65,7 +64,6 @@ class TestErrorEvent:
         assert event.priority == EventPriority.HIGH
 
     @pytest.mark.unit
-    @pytest.mark.timeout(30)
     def test_error_event_without_error_code(self):
         """
         Test ErrorEvent creation without error code.

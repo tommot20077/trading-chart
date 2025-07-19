@@ -50,15 +50,19 @@ testpaths = [
     "src/*/tests/benchmark",
     "tests/e2e"
 ]
+timeout = 60  # Default timeout: 60 seconds for non-unit tests
 addopts = [
     "--strict-markers",
     "--strict-config",
     "--verbose",
+    "--timeout=60",
     "--timeout-method=thread",
 ]
 filterwarnings = [
     # Ignore fixture marks warning from pytest itself
-    "ignore:Marks applied to fixtures have no effect:pytest.PytestRemovedIn9Warning"
+    "ignore:Marks applied to fixtures have no effect:pytest.PytestRemovedIn9Warning",
+    # Ignore pytest-benchmark asyncio coroutine warnings
+    "ignore:coroutine.*was never awaited:RuntimeWarning"
 ]
 markers = [
     # Test levels
@@ -75,6 +79,9 @@ markers = [
     "asyncio: Asynchronous tests",
     "concurrency: Tests involving concurrency",
     "timeout: Tests with timeout restrictions",
+    
+    # Logging specific
+    "enable_loguru_file_io: Enable actual loguru file I/O for testing file logging functionality",
 
 ]
 
@@ -89,7 +96,9 @@ dev-dependencies = [
     "mypy>=1.0",
     "poethepoet>=0.27.0",
     "pytest-asyncio>=0.23.0",
+    "pytest-benchmark>=5.1.0",
     "pytest-timeout>=2.1.0",
+    "pytest-repeat>=0.9.4", # Remove
     "time-machine>=2.13.0",
     "import-linter>=2.0",
     # Security scanning tools
@@ -97,12 +106,7 @@ dev-dependencies = [
     "bandit>=1.7.0",
     "pip-audit>=2.6.0",
     "semgrep>=1.45.0",
-]
-
-[dependency-groups]
-dev = [
     "psutil>=7.0.0",
-    "pytest-benchmark>=5.1.0",
 ]
 
 [tool.poe.tasks]

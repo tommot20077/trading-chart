@@ -18,6 +18,8 @@ class TestEventType:
         assert EventType.CONNECTION == "connection"
         assert EventType.ERROR == "error"
         assert EventType.SYSTEM == "system"
+        assert EventType.ALERT == "alert"
+        assert EventType.MARKET_DATA == "market_data"
 
     @pytest.mark.unit
     def test_event_type_string_representation(self):
@@ -28,6 +30,8 @@ class TestEventType:
         assert str(EventType.CONNECTION) == "connection"
         assert str(EventType.ERROR) == "error"
         assert str(EventType.SYSTEM) == "system"
+        assert str(EventType.ALERT) == "alert"
+        assert str(EventType.MARKET_DATA) == "market_data"
 
     @pytest.mark.unit
     def test_event_type_equality(self):
@@ -48,19 +52,23 @@ class TestEventType:
         assert "connection" in event_values
         assert "error" in event_values
         assert "system" in event_values
+        assert "alert" in event_values
+        assert "market_data" in event_values
         assert "invalid_event" not in event_values
 
     @pytest.mark.unit
     def test_event_type_iteration(self):
         """Test iteration over EventType enum members."""
         events = list(EventType)
-        assert len(events) == 6
+        assert len(events) == 8
         assert EventType.TRADE in events
         assert EventType.KLINE in events
         assert EventType.ORDER in events
         assert EventType.CONNECTION in events
         assert EventType.ERROR in events
         assert EventType.SYSTEM in events
+        assert EventType.ALERT in events
+        assert EventType.MARKET_DATA in events
 
     @pytest.mark.unit
     def test_event_type_from_string(self):
@@ -71,6 +79,8 @@ class TestEventType:
         assert EventType("connection") == EventType.CONNECTION
         assert EventType("error") == EventType.ERROR
         assert EventType("system") == EventType.SYSTEM
+        assert EventType("alert") == EventType.ALERT
+        assert EventType("market_data") == EventType.MARKET_DATA
 
     @pytest.mark.unit
     def test_event_type_invalid_value_raises_exception(self):
@@ -87,7 +97,7 @@ class TestEventType:
     @pytest.mark.unit
     def test_event_type_completeness(self):
         """Test that all expected event types are present."""
-        expected_types = {"trade", "kline", "order", "connection", "error", "system"}
+        expected_types = {"trade", "kline", "order", "connection", "error", "system", "alert", "market_data"}
         actual_types = {event.value for event in EventType}
         assert actual_types == expected_types
 
@@ -95,9 +105,9 @@ class TestEventType:
     def test_event_type_business_logic_categories(self):
         """Test logical categorization of event types."""
         # Data events
-        data_events = [EventType.TRADE, EventType.KLINE]
+        data_events = [EventType.TRADE, EventType.KLINE, EventType.MARKET_DATA]
         for event in data_events:
-            assert event.value in ["trade", "kline"]
+            assert event.value in ["trade", "kline", "market_data"]
 
         # System events
         system_events = [EventType.CONNECTION, EventType.ERROR, EventType.SYSTEM]
@@ -118,6 +128,8 @@ class TestEventType:
         assert "EventType.CONNECTION" in repr(EventType.CONNECTION)
         assert "EventType.ERROR" in repr(EventType.ERROR)
         assert "EventType.SYSTEM" in repr(EventType.SYSTEM)
+        assert "EventType.ALERT" in repr(EventType.ALERT)
+        assert "EventType.MARKET_DATA" in repr(EventType.MARKET_DATA)
 
     @pytest.mark.unit
     def test_event_type_hash_consistency(self):
@@ -130,9 +142,11 @@ class TestEventType:
             EventType.CONNECTION: "connection_handler",
             EventType.ERROR: "error_handler",
             EventType.SYSTEM: "system_handler",
+            EventType.ALERT: "alert_handler",
+            EventType.MARKET_DATA: "market_data_handler",
         }
 
-        assert len(event_dict) == 6
+        assert len(event_dict) == 8
         assert event_dict[EventType.TRADE] == "trade_handler"
         assert event_dict[EventType.KLINE] == "kline_handler"
 
@@ -154,5 +168,5 @@ class TestEventType:
         assert data_events.intersection(system_events) == set()
 
         # Test set union
-        all_events = data_events.union(system_events).union({EventType.ORDER})
-        assert len(all_events) == 6
+        all_events = data_events.union(system_events).union({EventType.ORDER, EventType.ALERT, EventType.MARKET_DATA})
+        assert len(all_events) == 8

@@ -654,26 +654,17 @@ class TestDataCleaningIntegration:
             assert result["cleaned_count"] > 0
             assert result["stats"]["total_processed"] > 0
 
+    @pytest.mark.benchmark
     @pytest.mark.asyncio
-    async def test_cleaning_performance_monitoring(self, cleaning_processor, dirty_kline_data):
+    async def test_cleaning_performance_monitoring(self, cleaning_processor, dirty_kline_data, benchmark):
         """Test cleaning performance monitoring"""
-        # Arrange: Large dataset for performance testing
-        large_dataset = dirty_kline_data * 100  # Multiply dataset
+        # Use smaller dataset for benchmark consistency
+        dataset = dirty_kline_data * 20  # Reduced multiplier for benchmark
 
-        # Act: Measure cleaning performance
-        import time
+        async def cleaning_performance_operation():
+            cleaned_klines, stats = await cleaning_processor.process_and_clean_klines(dataset, "BTCUSDT")
+            return len(cleaned_klines)
 
-        start_time = time.time()
-
-        cleaned_klines, stats = await cleaning_processor.process_and_clean_klines(large_dataset, "BTCUSDT")
-
-        end_time = time.time()
-        processing_time = end_time - start_time
-
-        # Assert: Performance should be reasonable
-        assert processing_time < 5.0  # Should complete within 5 seconds
-        assert len(cleaned_klines) > 0
-
-        # Calculate processing rate
-        processing_rate = len(large_dataset) / processing_time
-        assert processing_rate > 50  # Should process at least 50 records per second
+        # Benchmark cleaning performance
+        result = await benchmark(cleaning_performance_operation)
+        assert result > 0

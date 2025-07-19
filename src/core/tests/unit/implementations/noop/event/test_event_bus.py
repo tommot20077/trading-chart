@@ -69,7 +69,6 @@ class TestNoOpEventBus:
         assert bus.get_subscription_count() == 0
 
     @pytest.mark.unit
-    @pytest.mark.timeout(30)
     def test_unsubscribe_nonexistent(self):
         """Test unsubscribing non-existent subscription."""
         bus = NoOpEventBus()
@@ -78,7 +77,6 @@ class TestNoOpEventBus:
         assert result is False
 
     @pytest.mark.unit
-    @pytest.mark.timeout(30)
     def test_unsubscribe_all(self):
         """Test unsubscribing all handlers."""
         bus = NoOpEventBus()

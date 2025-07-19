@@ -15,6 +15,8 @@ class EventType(str, Enum):
         CONNECTION (str): Represents a connection status change event.
         ERROR (str): Represents an error event.
         SYSTEM (str): Represents a general system event.
+        ALERT (str): Represents an alert event.
+        MARKET_DATA (str): Represents a market data event.
     """
 
     TRADE = "trade"
@@ -23,6 +25,8 @@ class EventType(str, Enum):
     CONNECTION = "connection"
     ERROR = "error"
     SYSTEM = "system"
+    ALERT = "alert"
+    MARKET_DATA = "market_data"
 
     def __str__(self) -> str:
         return self.value

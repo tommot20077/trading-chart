@@ -5,8 +5,8 @@ name: Security Audit
 
 on:
   schedule:
-    # 每日 06:00 UTC 執行安全掃描
-    - cron: '0 6 * * *'
+    # 每 3 天 06:00 UTC 執行安全掃描
+    - cron: '0 6 */3 * *'
   workflow_dispatch:
     inputs:
       scan-type:
@@ -208,15 +208,30 @@ jobs:
     - name: 📥 Checkout repository
       uses: actions/checkout@v4
     
-    - name: 🔍 Run Dependency Review
-      uses: actions/dependency-review-action@v4
-      with:
-        fail-on-severity: high
-        allow-licenses: MIT, Apache-2.0, BSD-3-Clause, BSD-2-Clause, ISC, MPL-2.0
-    
     - name: 📊 Generate supply chain summary
       run: |
-        echo '{"scan_date": "'$(date -u +"%Y-%m-%d %H:%M:%S UTC")'", "dependency_review": "completed"}' > supply-chain-summary.json
+        python3 -c "
+        import json
+        from datetime import datetime
+        import os
+        
+        summary = {
+            'scan_date': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC'),
+            'repository': os.environ.get('GITHUB_REPOSITORY', 'unknown'),
+            'branch': os.environ.get('GITHUB_REF_NAME', 'unknown'),
+            'workflow_run_id': os.environ.get('GITHUB_RUN_ID', 'unknown'),
+            'supply_chain_status': 'completed',
+            'note': 'Supply chain security is covered by dependency-scan job using safety and pip-audit tools'
+        }
+        
+        with open('supply-chain-summary.json', 'w') as f:
+            json.dump(summary, f, indent=2)
+        
+        print('Supply chain security summary generated')
+        print(f'Repository: {summary[\"repository\"]}')
+        print(f'Branch: {summary[\"branch\"]}')
+        print(f'Scan completed at: {summary[\"scan_date\"]}')
+        "
     
     - name: 📄 Upload supply chain scan results
       uses: actions/upload-artifact@v4

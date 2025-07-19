@@ -1,0 +1,38 @@
+{
+  "rate_limiting": {
+    "default_capacity": 100,
+    "default_refill_rate": 10.0,
+    "cleanup_interval": 300.0,
+    "multi_tenant": true
+  },
+  "exception_handling": {
+    "enable_context_tracking": true,
+    "max_retry_attempts": 3,
+    "retry_delay": 1.0,
+    "error_codes": {
+      "validation": "VALIDATION_ERROR",
+      "business": "BUSINESS_ERROR",
+      "data_not_found": "DATA_NOT_FOUND",
+      "external_service": "EXTERNAL_ERROR",
+      "rate_limit": "RATE_LIMIT_EXCEEDED"
+    }
+  },
+  "middleware": {
+    "enable_pipeline": true,
+    "max_execution_time": 30.0,
+    "enable_context_passing": true,
+    "priority_sorting": true
+  },
+  "logging": {
+    "level": "DEBUG",
+    "format": "json",
+    "outputs": ["console", "file"],
+    "enable_context_tracking": true
+  },
+  "testing": {
+    "concurrency_levels": [1, 5, 10, 20],
+    "stress_test_duration": 10.0,
+    "memory_threshold_mb": 50,
+    "thread_threshold": 10
+  }
+}

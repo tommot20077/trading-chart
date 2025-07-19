@@ -134,7 +134,6 @@ class AbstractEventBusContract(ABC):
         assert count == 0
 
     @pytest.mark.contract
-    @pytest.mark.timeout(30)
     def test_unsubscribe_all_with_event_type(self, event_bus):
         """Test unsubscribe_all with specific event type."""
         handler = Mock()
@@ -160,7 +159,6 @@ class AbstractEventBusContract(ABC):
         await event_bus.close()
 
     @pytest.mark.contract
-    @pytest.mark.timeout(30)
     def test_get_subscription_count_returns_int(self, event_bus):
         """Test that get_subscription_count returns an integer."""
         count = event_bus.get_subscription_count()

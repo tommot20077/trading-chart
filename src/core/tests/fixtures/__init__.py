@@ -1,0 +1,2 @@
+# ABOUTME: Test fixtures package initialization for trading chart testing infrastructure
+# ABOUTME: Provides importable fixtures for performance monitoring, event load testing, and observability components

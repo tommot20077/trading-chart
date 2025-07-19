@@ -4,7 +4,6 @@
 import asyncio
 import pytest
 import pytest_asyncio
-import time
 import time_machine
 
 from core.implementations.memory.common.rate_limiter import InMemoryRateLimiter, TokenBucket
@@ -226,6 +225,8 @@ class TestInMemoryRateLimiter:
     @pytest.mark.asyncio
     async def test_cleanup_unused_buckets(self):
         """Test cleanup of unused buckets."""
+        import time
+        
         limiter = InMemoryRateLimiter(
             capacity=10,
             refill_rate=2.0,
@@ -272,6 +273,8 @@ class TestInMemoryRateLimiter:
 @pytest.mark.asyncio
 async def test_rate_limiter_integration():
     """Integration test simulating real-world usage."""
+    import time
+    
     limiter = InMemoryRateLimiter(capacity=5, refill_rate=1.0)
 
     # Simulate API requests
