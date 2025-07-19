@@ -55,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## Unreleased - 2025-07-15 [864bf9](https://github.com/tommot20077/trading-chart/commit/864bf9df6d2bdbd54432e36ea14c49127af2ed8a)
+## Unreleased - 2025-07-15 [2cb31b](https://github.com/tommot20077/trading-chart/commit/2cb31b7c25c79502165843374ce17520f9de9283)
 
 ### Added
 - **Authentication System**: Full authentication interfaces including authenticator, authorizer, and token manager

@@ -5,7 +5,7 @@
 格式基於 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)，
 此專案遵循 [語意化版本](https://semver.org/spec/v2.0.0.html)。
 
-## 未發布 - 2025-07-17 [9c372b](https://github.com/tommot20077/trading-chart/commit/9c372bd52d2fc6a2ef6118e2e08a478ce4e548e9)
+## 未發布 - 2025-07-17 [2cb31b](https://github.com/tommot20077/trading-chart/commit/2cb31b7c25c79502165843374ce17520f9de9283)
 
 ### 新增功能
 - **依賴項審查工作流程**：新增 GitHub Actions 依賴項安全性和授權審查工作流程
