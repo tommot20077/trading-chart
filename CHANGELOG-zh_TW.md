@@ -5,7 +5,7 @@
 格式基於 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)，
 此專案遵循 [語意化版本](https://semver.org/spec/v2.0.0.html)。
 
-## 未發布 - 2025-07-20 [eee4a58](https://github.com/tommot20077/trading-chart/commit/eee4a58f4d1a6c7b8e5e8f4d5a8c7b4e5e8f4d5a)
+## 未發布 - 2025-07-20 [e80131](https://github.com/tommot20077/trading-chart/commit/e801319b09abdeedd403f1e4eabddcb9c0db1da5)
 
 ### 新增功能
 - **完整整合測試套件**：新增涵蓋認證、資料處理、事件系統、可觀測性和儲存模組的大型整合測試套件
