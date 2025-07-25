@@ -46,13 +46,41 @@ class NoOpEventBus(AbstractEventBus):
         Publish an event - discards the event without delivery.
 
         This implementation discards the event without performing any
-        actual event routing or handler invocation.
+        actual event routing or handler invocation. If a middleware pipeline
+        is configured, it will execute the pipeline but still not deliver the event.
 
         Args:
             event: The event to publish (discarded)
         """
         if self._closed:
             raise RuntimeError("Event bus is closed")
+
+        # Execute middleware pipeline if configured (for testing/validation purposes)
+        if self._middleware_pipeline:
+            from core.models.middleware import MiddlewareContext
+
+            # Create minimal middleware context
+            context = MiddlewareContext(
+                id=f"noop-{uuid.uuid4()}",
+                event_type=event.event_type.value if event.event_type else None,
+                event_id=event.event_id,
+                symbol=getattr(event, "symbol", None),
+                data=event.data or {},
+                metadata={
+                    "processing_stage": "noop_event_bus",
+                    "handler_count": 0,  # NoOp never has real handlers
+                    **(event.metadata or {}),
+                },
+            )
+
+            # Execute middleware pipeline but ignore result
+            # This allows testing middleware behavior without actual event processing
+            try:
+                await self._middleware_pipeline.execute(context)
+            except Exception:
+                # Silently ignore middleware errors in NoOp implementation
+                # This maintains the "no side effects" principle
+                pass
 
         # Discard the event - no actual processing in NoOp implementation
         pass

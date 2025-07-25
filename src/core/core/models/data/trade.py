@@ -13,6 +13,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from core.models.data.enum import AssetClass, TradeSide
+from core.config.market_limits import get_market_limits_config
 
 
 class Trade(BaseModel):
@@ -144,11 +145,7 @@ class Trade(BaseModel):
         if v <= 0:
             raise ValueError("Price must be greater than 0")
 
-        # TODO: Dynamic validation - implement market-specific price limits
-        # This should be configurable based on asset class and market conditions
-        max_reasonable_price = Decimal("10000000.00")  # 10M as reasonable upper limit
-        if v > max_reasonable_price:
-            raise ValueError(f"Price {v} exceeds reasonable maximum of {max_reasonable_price}")
+        # Basic validation only - market-specific limits are applied in model_validator
 
         return v
 
@@ -170,28 +167,60 @@ class Trade(BaseModel):
         if v <= 0:
             raise ValueError("Quantity must be greater than 0")
 
-        # TODO: Dynamic validation - implement market-specific quantity limits
-        # This should be configurable based on asset class and market conditions
-        max_reasonable_quantity = Decimal("1000000000.00")  # 1B as reasonable upper limit
-        if v > max_reasonable_quantity:
-            raise ValueError(f"Quantity {v} exceeds reasonable maximum of {max_reasonable_quantity}")
+        # Basic validation only - market-specific limits are applied in model_validator
 
         return v
 
     @model_validator(mode="after")
     def validate_basic_consistency(self) -> "Trade":
         """
-        Validates basic consistency for the trade.
+        Validates basic consistency for the trade and applies market-specific limits.
 
-        Only validates essential business logic to avoid rejecting valid trade data
-        due to exchange-specific behaviors or extreme market conditions.
+        This method validates essential business logic and applies configurable
+        market-specific limits based on the symbol's asset class.
 
         Returns:
             The validated Trade instance.
 
         Raises:
-            ValueError: If there are critical consistency issues.
+            ValueError: If there are critical consistency issues or market limit violations.
         """
+        # Apply market-specific validation limits
+        try:
+            config = get_market_limits_config()
+            limits = config.get_limits(self.symbol)
+
+            # Validate price against market limits
+            if self.price < limits.min_price:
+                raise ValueError(f"Price {self.price} is below minimum {limits.min_price} for {self.symbol}")
+            if self.price > limits.max_price:
+                raise ValueError(f"Price {self.price} exceeds maximum {limits.max_price} for {self.symbol}")
+
+            # Validate quantity against market limits
+            if self.quantity < limits.min_quantity:
+                raise ValueError(f"Quantity {self.quantity} is below minimum {limits.min_quantity} for {self.symbol}")
+            if self.quantity > limits.max_quantity:
+                raise ValueError(f"Quantity {self.quantity} exceeds maximum {limits.max_quantity} for {self.symbol}")
+
+            # Validate price precision
+            price_exponent = self.price.as_tuple().exponent
+            price_scale = abs(price_exponent) if isinstance(price_exponent, int) else 0
+            if price_scale > limits.price_precision:
+                raise ValueError(
+                    f"Price precision {price_scale} exceeds maximum {limits.price_precision} for {self.symbol}"
+                )
+
+            # Validate quantity precision
+            quantity_exponent = self.quantity.as_tuple().exponent
+            quantity_scale = abs(quantity_exponent) if isinstance(quantity_exponent, int) else 0
+            if quantity_scale > limits.quantity_precision:
+                raise ValueError(
+                    f"Quantity precision {quantity_scale} exceeds maximum {limits.quantity_precision} for {self.symbol}"
+                )
+        except ImportError:
+            # If market limits config is not available, fall back to basic validation
+            pass
+
         # Basic sanity check: volume should be reasonable (not negative or extremely large)
         volume = self.volume
         if volume <= 0:

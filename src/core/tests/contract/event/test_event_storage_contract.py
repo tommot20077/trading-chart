@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 from core.interfaces.event.event_storage import AbstractEventStorage
 from core.implementations.memory.storage.event_storage import InMemoryEventStorage
-from core.implementations.noop.event_storage import NoOpEventStorage
+from core.implementations.noop.storage.event_storage import NoOpEventStorage
 from ..base_contract_test import ContractTestBase, AsyncContractTestMixin
 
 

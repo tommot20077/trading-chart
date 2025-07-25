@@ -19,6 +19,17 @@ from core.exceptions.base import (
     NotSupportedError,
 )
 
+from core.exceptions.middleware import (
+    MiddlewareError,
+    MiddlewareExecutionError,
+    MiddlewareConfigurationError,
+    MiddlewarePipelineError,
+    MiddlewareTimeoutError,
+    MiddlewareCircularDependencyError,
+    MiddlewarePriorityConflictError,
+    MiddlewareValidationError,
+)
+
 __all__ = [
     "CoreException",
     "ValidationException",
@@ -35,4 +46,13 @@ __all__ = [
     "EventDeserializationError",
     "StorageError",
     "NotSupportedError",
+    # Middleware exceptions
+    "MiddlewareError",
+    "MiddlewareExecutionError",
+    "MiddlewareConfigurationError",
+    "MiddlewarePipelineError",
+    "MiddlewareTimeoutError",
+    "MiddlewareCircularDependencyError",
+    "MiddlewarePriorityConflictError",
+    "MiddlewareValidationError",
 ]

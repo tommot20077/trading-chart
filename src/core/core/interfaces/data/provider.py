@@ -1,3 +1,6 @@
+# ABOUTME: Abstract data provider interface for market data access and streaming
+# ABOUTME: Defines the contract for components that connect to exchanges and provide real-time and historical market data
+
 from abc import abstractmethod, ABC
 from datetime import datetime
 from typing import Any, AsyncIterator
@@ -238,6 +241,10 @@ class AbstractDataProvider(ABC):
 
         Returns:
             None: This method does not return a value.
+
+        Raises:
+            DataProviderError: If cleanup fails due to provider-specific issues.
+            NetworkError: If cleanup fails due to network issues.
         """
         pass
 
@@ -257,6 +264,9 @@ class AbstractDataProvider(ABC):
             tuple[bool, str]: A tuple where the first element is `True` if the configuration is valid,
                               and `False` otherwise. The second element is an error message (string)
                               if validation fails, or an empty string (`""`) if validation succeeds.
+
+        Raises:
+            ValueError: If the config parameter itself is malformed (e.g., not a dict).
         """
         pass
 

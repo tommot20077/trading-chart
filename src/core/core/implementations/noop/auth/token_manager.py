@@ -1,11 +1,11 @@
 # ABOUTME: NoOp implementation of AbstractTokenManager that provides fake token operations
 # ABOUTME: Provides minimal token management functionality for testing scenarios
 
-from typing import Any
 
 from core.interfaces.auth.token_manager import AbstractTokenManager
 from core.models.auth.auth_token import AuthToken
 from core.models.auth.enum import Role, Permission
+from core.models.types import UserData
 from core.implementations.memory.auth.models import MemoryAuthToken
 
 
@@ -37,7 +37,7 @@ class NoOpTokenManager(AbstractTokenManager):
         # No initialization needed for NoOp implementation
         pass
 
-    def generate_token(self, user_data: dict[str, Any]) -> str:
+    def generate_token(self, user_data: UserData) -> str:
         """
         Generate a token - returns a fake token string.
 

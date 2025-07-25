@@ -1,12 +1,13 @@
 # ABOUTME: NoOp implementation of AbstractKlineRepository that provides fake storage
 # ABOUTME: Provides minimal Kline storage functionality for testing scenarios
 
-from typing import Any, AsyncIterator
+from typing import AsyncIterator
 from datetime import datetime
 
 from core.interfaces.storage.Kline_repository import AbstractKlineRepository
 from core.models import KlineInterval, Kline
 from core.models.storage.query_option import QueryOptions
+from core.models.types import StatisticsResult
 
 
 class NoOpKlineRepository(AbstractKlineRepository):
@@ -252,7 +253,7 @@ class NoOpKlineRepository(AbstractKlineRepository):
         interval: KlineInterval,
         start_time: datetime | None = None,
         end_time: datetime | None = None,
-    ) -> dict[str, Any]:
+    ) -> StatisticsResult:
         """
         Get statistics - returns fake statistics.
 
@@ -270,14 +271,31 @@ class NoOpKlineRepository(AbstractKlineRepository):
         if self._closed:
             raise RuntimeError("Kline repository is closed")
 
-        return {
-            "total_klines": 0,
-            "symbol": symbol,
-            "interval": interval.value,
-            "start_time": start_time.isoformat() if start_time else None,
-            "end_time": end_time.isoformat() if end_time else None,
-            "fake_stat": "noop_implementation",
-        }
+        return StatisticsResult(
+            count=0,
+            min_timestamp=start_time,
+            max_timestamp=end_time,
+            earliest_timestamp=start_time,
+            latest_timestamp=end_time,
+            first_timestamp=start_time,
+            last_timestamp=start_time,
+            storage_size_bytes=0,
+            avg_size_bytes=0.0,
+            price_statistics={},
+            volume_statistics={},
+            data_statistics={
+                "symbol": symbol,
+                "interval": interval.value,
+                "fake_stat": "noop_implementation",
+            },
+            # Flat fields expected by tests
+            volume_total=0.0,
+            quote_volume_total=0.0,
+            price_high=None,
+            price_low=None,
+            avg_price=None,
+            avg_volume=None,
+        )
 
     async def close(self) -> None:
         """

@@ -10,6 +10,7 @@ from enum import Enum
 from typing import Dict, List, Optional, Any, Deque
 
 from core.interfaces.observability.notification_handler import AbstractNotificationHandler
+from core.models.types import AlertData
 
 
 class NotificationStatus(Enum):
@@ -141,12 +142,12 @@ class InMemoryNotificationHandler(AbstractNotificationHandler):
 
         return random.random() < self.simulate_failure_rate
 
-    def _create_notification_record(self, alert_data: dict[str, Any]) -> NotificationRecord:
+    def _create_notification_record(self, alert_data: AlertData) -> NotificationRecord:
         """Create a notification record from alert data."""
         now = time.time()
         return NotificationRecord(
             id=self._generate_notification_id(),
-            alert_data=alert_data.copy(),
+            alert_data=dict(alert_data),
             status=NotificationStatus.PENDING,
             created_at=now,
             updated_at=now,
@@ -259,7 +260,7 @@ class InMemoryNotificationHandler(AbstractNotificationHandler):
             # This prevents hanging during pytest teardown
             pass
 
-    async def send_notification(self, alert_data: dict[str, Any]) -> tuple[bool, str]:
+    async def send_notification(self, alert_data: AlertData) -> tuple[bool, str]:
         """
         Send a notification for the provided alert data.
 
@@ -271,6 +272,10 @@ class InMemoryNotificationHandler(AbstractNotificationHandler):
         """
         self._ensure_not_closed()
 
+        if not alert_data:
+            return False, "alert_data cannot be empty"
+
+        # Validate that alert_data is a dictionary
         if not isinstance(alert_data, dict):
             return False, "alert_data must be a dictionary"
 

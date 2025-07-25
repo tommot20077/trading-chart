@@ -1,9 +1,11 @@
 # ABOUTME: EventMiddlewareBus implementation that integrates middleware with event processing
 # ABOUTME: Decorates existing event bus to add middleware pipeline execution before event handling
 
-from typing import Optional, Callable, Awaitable
+import uuid
+from typing import Optional, Callable, Any
+from loguru import logger
 
-from core.interfaces.event import AbstractEventBus
+from core.interfaces.event.event_bus import AbstractEventBus, EventHandler, AsyncEventHandler
 from core.interfaces.middleware import AbstractMiddlewarePipeline
 from core.models.data.event import BaseEvent
 from core.models.event.event_type import EventType
@@ -40,6 +42,11 @@ class EventMiddlewareBus(AbstractEventBus):
             pipeline: The middleware pipeline to set, or None to remove it.
         """
         self.middleware_pipeline = pipeline
+        logger.info(
+            f"Middleware pipeline {'set' if pipeline else 'removed'} for EventMiddlewareBus",
+            middleware_bus=self.name,
+            pipeline_type=type(pipeline).__name__ if pipeline else None,
+        )
 
     async def get_middleware_pipeline(self) -> Optional[AbstractMiddlewarePipeline]:
         """
@@ -64,22 +71,51 @@ class EventMiddlewareBus(AbstractEventBus):
         """
         # Execute middleware pipeline if configured
         if self.middleware_pipeline:
-            # Create middleware context from event
-            context = self._create_middleware_context(event)
+            try:
+                # Create middleware context from event
+                context = self._create_middleware_context(event)
 
-            # Execute middleware pipeline
-            pipeline_result = await self.middleware_pipeline.execute(context)
+                # Execute middleware pipeline
+                pipeline_result = await self.middleware_pipeline.execute(context)
 
-            # Check if pipeline allows continuation
-            if not pipeline_result.is_successful() or not pipeline_result.should_continue:
-                # Log or handle middleware failure/cancellation
-                # For now, we'll just return without publishing
-                return
+                # Check if pipeline allows continuation
+                if not pipeline_result.should_continue:
+                    logger.info(
+                        "Event processing stopped by middleware pipeline",
+                        event_id=event.event_id,
+                        middleware_bus=self.name,
+                        result_status=pipeline_result.status.value
+                        if hasattr(pipeline_result.status, "value")
+                        else str(pipeline_result.status),
+                        reason=pipeline_result.data.get("reason", "No reason provided")
+                        if pipeline_result.data
+                        else "No reason provided",
+                    )
+                    return
 
-            # Apply any context modifications back to the event
-            # This allows middleware to modify event data
-            if pipeline_result.modified_context:
-                self._apply_context_modifications(event, pipeline_result.modified_context)
+                # Apply any context modifications back to the event
+                if pipeline_result.modified_context:
+                    self._apply_context_modifications(event, pipeline_result.modified_context)
+
+                logger.debug(
+                    "Event processed through middleware pipeline",
+                    event_id=event.event_id,
+                    middleware_bus=self.name,
+                    result_status=pipeline_result.status.value
+                    if hasattr(pipeline_result.status, "value")
+                    else str(pipeline_result.status),
+                )
+
+            except Exception as e:
+                logger.error(
+                    "Error executing middleware pipeline",
+                    event_id=event.event_id,
+                    middleware_bus=self.name,
+                    error=str(e),
+                    exc_info=e,
+                )
+                # Re-raise the exception to prevent event processing
+                raise
 
         # Publish the event to the underlying bus
         await self.base_bus.publish(event)
@@ -87,7 +123,7 @@ class EventMiddlewareBus(AbstractEventBus):
     def subscribe(
         self,
         event_type: EventType,
-        handler: Callable[[BaseEvent], None] | Callable[[BaseEvent], Awaitable[None]],
+        handler: EventHandler | AsyncEventHandler,
         *,
         filter_symbol: str | None = None,
     ) -> str:
@@ -198,20 +234,30 @@ class EventMiddlewareBus(AbstractEventBus):
             MiddlewareContext for middleware processing.
         """
         return MiddlewareContext(
-            event_type=event.event_type.value,
+            id=str(uuid.uuid4()),
+            event_type=event.event_type.value if event.event_type else None,
+            event_id=event.event_id,
             symbol=getattr(event, "symbol", None),
-            data=getattr(event, "data", None),
-            metadata={
-                "event_id": event.event_id,
-                "priority": event.priority.value,
-                "source": getattr(event, "source", None),
-                "timestamp": event.timestamp.isoformat() if hasattr(event, "timestamp") else None,
+            data={
+                # Pass the actual event data
+                **(event.data or {}),
+                # Also include event metadata
+                "event_metadata": {
+                    "event_type": event.event_type.value if event.event_type else None,
+                    "priority": event.priority.value if hasattr(event, "priority") else None,
+                },
             },
-            trace_id=getattr(event, "correlation_id", None),
-            request_id=event.event_id,
+            metadata={
+                "processing_stage": "event_middleware_processing",
+                "middleware_bus_name": self.name,
+                "timestamp": event.timestamp.isoformat() if hasattr(event, "timestamp") and event.timestamp else None,
+                "source": getattr(event, "source", None),
+                # Include event metadata
+                **(event.metadata or {}),
+            },
         )
 
-    def _apply_context_modifications(self, event: BaseEvent, modifications: dict) -> None:
+    def _apply_context_modifications(self, event: BaseEvent, modifications: dict[str, Any]) -> None:
         """
         Apply middleware context modifications back to the event.
 
@@ -219,11 +265,30 @@ class EventMiddlewareBus(AbstractEventBus):
 
         Args:
             event: The event to modify.
-            modifications: Dictionary of modifications to apply.
+            modifications: Dictionary containing modifications to apply to the event.
         """
-        for key, value in modifications.items():
-            if hasattr(event, key):
-                setattr(event, key, value)
+        # Apply data modifications if available
+        data_modifications = modifications.get("data")
+        if data_modifications and isinstance(data_modifications, dict):
+            # Update event data if it exists
+            if hasattr(event, "data") and event.data is not None:
+                # Only update non-metadata fields
+                for key, value in data_modifications.items():
+                    if key != "event_metadata":
+                        event.data[key] = value
+
+        # Apply metadata modifications
+        metadata_modifications = modifications.get("metadata")
+        if metadata_modifications and isinstance(metadata_modifications, dict):
+            if hasattr(event, "metadata") and event.metadata is not None:
+                # Update event metadata, excluding processing stage info
+                for key, value in metadata_modifications.items():
+                    if key not in ["processing_stage", "middleware_bus_name"]:
+                        event.metadata[key] = value
+
+        logger.debug(
+            "Applied middleware context modifications to event", event_id=event.event_id, middleware_bus=self.name
+        )
 
     def get_bus_info(self) -> dict:
         """

@@ -1,9 +1,9 @@
 # ABOUTME: No-operation implementation of AbstractNotificationHandler for testing
 # ABOUTME: Provides minimal notification handling that always succeeds without side effects
 
-from typing import Any
 
 from core.interfaces.observability.notification_handler import AbstractNotificationHandler
+from core.models.types import AlertData
 
 
 class NoOpNotificationHandler(AbstractNotificationHandler):
@@ -34,7 +34,7 @@ class NoOpNotificationHandler(AbstractNotificationHandler):
         # No initialization needed for NoOp implementation
         pass
 
-    async def send_notification(self, alert_data: dict[str, Any]) -> tuple[bool, str]:
+    async def send_notification(self, alert_data: AlertData) -> tuple[bool, str]:
         """
         Send a notification for the provided alert data.
 

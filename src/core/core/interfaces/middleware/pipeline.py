@@ -28,6 +28,11 @@ class AbstractMiddlewarePipeline(ABC):
 
         Args:
             middleware: AbstractMiddleware instance to add to the pipeline.
+
+        Raises:
+            MiddlewarePipelineError: If the middleware cannot be added (e.g., duplicate instance).
+            MiddlewareCircularDependencyError: If adding this middleware would create a circular dependency.
+            MiddlewarePriorityConflictError: If there's a priority conflict with existing middleware.
         """
         pass
 
@@ -59,6 +64,11 @@ class AbstractMiddlewarePipeline(ABC):
         Returns:
             MiddlewareResult containing the aggregated execution results from
             all middleware in the pipeline.
+
+        Raises:
+            MiddlewareExecutionError: If any middleware fails during execution.
+            MiddlewareTimeoutError: If middleware execution exceeds configured timeout.
+            MiddlewareValidationError: If the context data is invalid.
         """
         pass
 
@@ -79,6 +89,9 @@ class AbstractMiddlewarePipeline(ABC):
 
         This method clears the entire pipeline, removing all middleware
         and resetting the pipeline to an empty state.
+
+        Raises:
+            MiddlewarePipelineError: If the pipeline cannot be cleared due to an internal error.
         """
         pass
 

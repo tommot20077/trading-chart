@@ -1,3 +1,6 @@
+# ABOUTME: Abstract metadata repository interface for key-value metadata storage and retrieval
+# ABOUTME: Defines the contract for components that manage configuration, sync status, and operational metadata
+
 """Abstract metadata repository interface.
 
 This module defines the abstract base class for metadata repositories.
@@ -9,6 +12,9 @@ on-demand data that doesn't fit into structured data models like Klines or Trade
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any
+from types import TracebackType
+
+from core.models.types import MetadataValue
 
 
 class AbstractMetadataRepository(ABC):
@@ -20,7 +26,7 @@ class AbstractMetadataRepository(ABC):
     """
 
     @abstractmethod
-    async def set(self, key: str, value: dict[str, Any]) -> None:
+    async def set(self, key: str, value: dict[str, MetadataValue]) -> None:
         """
         Sets or updates a value for a given key.
 
@@ -36,7 +42,7 @@ class AbstractMetadataRepository(ABC):
         pass
 
     @abstractmethod
-    async def get(self, key: str) -> dict[str, Any] | None:
+    async def get(self, key: str) -> dict[str, MetadataValue] | None:
         """
         Retrieves the value associated with a given key.
 
@@ -103,7 +109,7 @@ class AbstractMetadataRepository(ABC):
     async def set_with_ttl(
         self,
         key: str,
-        value: dict[str, Any],
+        value: dict[str, MetadataValue],
         ttl_seconds: int,
     ) -> None:
         """
@@ -217,6 +223,9 @@ class AbstractMetadataRepository(ABC):
 
         This method should be called to gracefully shut down the repository,
         closing database connections or file handles.
+
+        Raises:
+            StorageError: If cleanup fails (e.g., cannot close connections).
         """
         pass
 
@@ -226,7 +235,9 @@ class AbstractMetadataRepository(ABC):
         """
         return self
 
-    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    async def __aexit__(
+        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None
+    ) -> None:
         """
         Exits the asynchronous context, ensuring the repository is closed.
         """

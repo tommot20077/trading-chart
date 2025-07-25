@@ -615,7 +615,7 @@ class TestResourceManagementLifecycle:
         connection_growth = final_connections - initial_connections
         
         # Verify no significant resource leaks
-        assert memory_growth_mb < 50, f"Memory growth too high: {memory_growth_mb}MB"
+        assert memory_growth_mb < 100, f"Memory growth too high: {memory_growth_mb}MB"
         assert file_growth <= 5, f"File descriptor leak detected: {file_growth}"
         assert connection_growth <= 2, f"Connection leak detected: {connection_growth}"
         

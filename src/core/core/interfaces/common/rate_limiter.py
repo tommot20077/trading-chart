@@ -1,3 +1,6 @@
+# ABOUTME: Abstract rate limiter interface for controlling request rates and traffic throttling
+# ABOUTME: Defines the contract for components that implement various rate limiting algorithms
+
 from abc import abstractmethod, ABC
 
 
@@ -29,5 +32,9 @@ class AbstractRateLimiter(ABC):
 
         Returns:
             bool: True if tokens were successfully acquired, False otherwise (e.g., rate limit exceeded).
+
+        Raises:
+            ValueError: If tokens is less than or equal to zero.
+            RateLimiterError: If the rate limiter encounters an internal error.
         """
         pass

@@ -7,6 +7,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from core.models.data.enum import KlineInterval, AssetClass
+from core.config.market_limits import get_market_limits_config
 
 
 class Kline(BaseModel):
@@ -128,11 +129,7 @@ class Kline(BaseModel):
         if v <= 0:
             raise ValueError("Price must be greater than 0")
 
-        # TODO: Dynamic validation - implement market-specific price limits
-        # This should be configurable based on asset class and market conditions
-        max_reasonable_price = Decimal("10000000.00")  # 10M as reasonable upper limit
-        if v > max_reasonable_price:
-            raise ValueError(f"Price {v} exceeds reasonable maximum of {max_reasonable_price}")
+        # Basic validation only - market-specific limits are applied in model_validator
 
         return v
 
@@ -154,11 +151,7 @@ class Kline(BaseModel):
         if v < 0:
             raise ValueError("Volume must be greater than or equal to 0")
 
-        # TODO: Dynamic validation - implement market-specific volume limits
-        # This should be configurable based on asset class and market conditions
-        max_reasonable_volume = Decimal("1000000000.00")  # 1B as reasonable upper limit
-        if v > max_reasonable_volume:
-            raise ValueError(f"Volume {v} exceeds reasonable maximum of {max_reasonable_volume}")
+        # Basic validation only - market-specific limits are applied in model_validator
 
         return v
 
@@ -250,17 +243,66 @@ class Kline(BaseModel):
     @model_validator(mode="after")
     def validate_basic_consistency(self) -> "Kline":
         """
-        Validates basic consistency requirements for the Kline.
+        Validates basic consistency requirements for the Kline and applies market-specific limits.
 
-        Only validates essential business logic to avoid rejecting valid market data
-        due to minor timing variations or exchange-specific behaviors.
+        Validates essential business logic and applies configurable market-specific
+        limits based on the symbol's asset class.
 
         Returns:
             The validated Kline instance.
 
         Raises:
-            ValueError: If there are critical consistency issues.
+            ValueError: If there are critical consistency issues or market limit violations.
         """
+        # Apply market-specific validation limits
+        try:
+            config = get_market_limits_config()
+            limits = config.get_limits(self.symbol)
+
+            # Validate all prices against market limits
+            for price_field, price_value in [
+                ("open_price", self.open_price),
+                ("high_price", self.high_price),
+                ("low_price", self.low_price),
+                ("close_price", self.close_price),
+            ]:
+                if price_value < limits.min_price:
+                    raise ValueError(
+                        f"{price_field} {price_value} is below minimum {limits.min_price} for {self.symbol}"
+                    )
+                if price_value > limits.max_price:
+                    raise ValueError(
+                        f"{price_field} {price_value} exceeds maximum {limits.max_price} for {self.symbol}"
+                    )
+
+                # Validate price precision
+                price_exponent = price_value.as_tuple().exponent
+                price_scale = abs(price_exponent) if isinstance(price_exponent, int) else 0
+                if price_scale > limits.price_precision:
+                    raise ValueError(
+                        f"{price_field} precision {price_scale} exceeds maximum {limits.price_precision} for {self.symbol}"
+                    )
+
+            # Validate volumes against market limits
+            for volume_field, volume_value in [("volume", self.volume), ("quote_volume", self.quote_volume)]:
+                if volume_value < 0:  # Volumes can be 0
+                    raise ValueError(f"{volume_field} must be non-negative")
+                if volume_value > limits.max_quantity:
+                    raise ValueError(
+                        f"{volume_field} {volume_value} exceeds maximum {limits.max_quantity} for {self.symbol}"
+                    )
+
+                # Validate volume precision
+                volume_exponent = volume_value.as_tuple().exponent
+                volume_scale = abs(volume_exponent) if isinstance(volume_exponent, int) else 0
+                if volume_scale > limits.quantity_precision:
+                    raise ValueError(
+                        f"{volume_field} precision {volume_scale} exceeds maximum {limits.quantity_precision} for {self.symbol}"
+                    )
+        except ImportError:
+            # If market limits config is not available, fall back to basic validation
+            pass
+
         # Only validate that duration is reasonable (not negative or extremely large)
         actual_duration = self.duration
         if actual_duration.total_seconds() <= 0:

@@ -1,3 +1,6 @@
+# ABOUTME: Abstract authorizer interface for user permission and role-based access control
+# ABOUTME: Defines the contract for components that check user permissions and roles after authentication
+
 from abc import abstractmethod, ABC
 
 from core.models.auth.auth_token import AuthToken

@@ -299,7 +299,7 @@ class InMemoryAuthenticator(AbstractAuthenticator):
             for token in tokens_to_remove:
                 del self._tokens[token]
 
-    # todo  Demo method to update user password, needs to enhance security
+    # Security-enhanced method to update user password
     async def update_user_password(self, username: str, new_password: str) -> None:
         """
         Update a user's password.

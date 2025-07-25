@@ -11,6 +11,7 @@ from core.interfaces.storage.Kline_repository import AbstractKlineRepository
 from core.models.data.kline import Kline
 from core.models.data.enum import KlineInterval
 from core.models.storage.query_option import QueryOptions
+from core.models.types import StatisticsResult
 from core.exceptions import StorageError, ValidationException
 
 
@@ -410,7 +411,7 @@ class InMemoryKlineRepository(AbstractKlineRepository):
         interval: KlineInterval,
         start_time: datetime | None = None,
         end_time: datetime | None = None,
-    ) -> Dict[str, Any]:
+    ) -> StatisticsResult:
         """Get statistics for klines within optional time range for a specific interval."""
         if self._closed:
             raise StorageError("Repository is closed", code="REPOSITORY_CLOSED")
@@ -420,7 +421,7 @@ class InMemoryKlineRepository(AbstractKlineRepository):
             cache_key = f"{start_time}:{end_time}"
             if cache_key in self._stats_cache[symbol][interval]:
                 cached_stats = self._stats_cache[symbol][interval][cache_key]
-                return dict(cached_stats) if isinstance(cached_stats, dict) else cached_stats
+                return cached_stats  # type: ignore[no-any-return]
 
             klines_list = self._klines[symbol][interval]
             if not klines_list:
@@ -449,11 +450,7 @@ class InMemoryKlineRepository(AbstractKlineRepository):
             # Cache the result
             self._stats_cache[symbol][interval][cache_key] = stats
 
-            # Ensure we return a proper dict
-            if isinstance(stats, dict):
-                return stats
-            else:
-                return dict(stats)
+            return stats
 
     async def close(self) -> None:
         """Close the repository and clean up resources."""
@@ -537,22 +534,31 @@ class InMemoryKlineRepository(AbstractKlineRepository):
 
         return result
 
-    def _empty_statistics(self) -> Dict[str, Any]:
-        """Return empty statistics dictionary."""
-        return {
-            "count": 0,
-            "first_timestamp": None,
-            "last_timestamp": None,
-            "price_high": None,
-            "price_low": None,
-            "volume_total": 0,
-            "quote_volume_total": 0,
-            "trades_count_total": 0,
-            "avg_price": None,
-            "avg_volume": None,
-        }
+    def _empty_statistics(self) -> StatisticsResult:
+        """Return empty statistics result."""
+        return StatisticsResult(
+            count=0,
+            min_timestamp=None,
+            max_timestamp=None,
+            earliest_timestamp=None,
+            latest_timestamp=None,
+            first_timestamp=None,
+            last_timestamp=None,
+            storage_size_bytes=0,
+            avg_size_bytes=0.0,
+            price_statistics={},
+            volume_statistics={},
+            data_statistics={},
+            # Flat fields expected by tests
+            volume_total=0.0,
+            quote_volume_total=0.0,
+            price_high=None,
+            price_low=None,
+            avg_price=None,
+            avg_volume=None,
+        )
 
-    def _calculate_statistics(self, klines: List[Kline]) -> Dict[str, Any]:
+    def _calculate_statistics(self, klines: List[Kline]) -> StatisticsResult:
         """Calculate statistics for a list of klines."""
         if not klines:
             return self._empty_statistics()
@@ -580,18 +586,37 @@ class InMemoryKlineRepository(AbstractKlineRepository):
         trades_count_total = sum(trades_counts)
         avg_volume = volume_total / count
 
-        return {
-            "count": count,
-            "first_timestamp": first_kline.open_time,
-            "last_timestamp": last_kline.open_time,
-            "price_high": price_high,
-            "price_low": price_low,
-            "volume_total": volume_total,
-            "quote_volume_total": quote_volume_total,
-            "trades_count_total": trades_count_total,
-            "avg_price": avg_price,
-            "avg_volume": avg_volume,
-        }
+        return StatisticsResult(
+            count=count,
+            min_timestamp=first_kline.open_time,
+            max_timestamp=last_kline.open_time,
+            earliest_timestamp=first_kline.open_time,
+            latest_timestamp=last_kline.open_time,
+            first_timestamp=first_kline.open_time,
+            last_timestamp=last_kline.open_time,
+            storage_size_bytes=0,  # TODO: Calculate actual size
+            avg_size_bytes=0.0,  # TODO: Calculate actual size
+            price_statistics={
+                "high": float(price_high),
+                "low": float(price_low),
+                "avg": float(avg_price),
+            },
+            volume_statistics={
+                "total": float(volume_total),
+                "quote_total": float(quote_volume_total),
+                "avg": float(avg_volume),
+            },
+            data_statistics={
+                "trades_count_total": trades_count_total,
+            },
+            # Flat fields expected by tests
+            volume_total=float(volume_total),
+            quote_volume_total=float(quote_volume_total),
+            price_high=float(price_high),
+            price_low=float(price_low),
+            avg_price=float(avg_price),
+            avg_volume=float(avg_volume),
+        )
 
     # Additional helper methods for testing
 

@@ -16,10 +16,13 @@ from .data.provider import NoOpDataProvider
 # Event implementations
 from .event.event_bus import NoOpEventBus
 from .event.event_serializer import NoOpEventSerializer
-from .event_storage import NoOpEventStorage
+from .storage.event_storage import NoOpEventStorage
 
 # Observability implementations
 from .observability.notification_handler import NoOpNotificationHandler
+
+# Middleware implementations
+from .middleware.pipeline import NoOpMiddlewarePipeline
 
 # Storage implementations
 from .storage.metadata_repository import NoOpMetadataRepository
@@ -40,6 +43,8 @@ __all__ = [
     "NoOpEventBus",
     "NoOpEventSerializer",
     "NoOpEventStorage",
+    # Middleware
+    "NoOpMiddlewarePipeline",
     # Observability
     "NoOpNotificationHandler",
     # Storage

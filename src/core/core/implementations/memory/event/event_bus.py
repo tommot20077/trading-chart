@@ -331,8 +331,61 @@ class InMemoryEventBus(AbstractEventBus):
             self._error_count += 1
 
     async def _process_single_event(self, event: BaseEvent) -> None:
-        """Process a single event through all matching handlers."""
+        """Process a single event through middleware pipeline and handlers."""
         try:
+            # Apply middleware pipeline if configured
+            if self._middleware_pipeline:
+                from core.models.middleware import MiddlewareContext
+
+                # Create middleware context
+                context = MiddlewareContext(
+                    id=str(uuid.uuid4()),
+                    event_type=event.event_type.value if event.event_type else None,
+                    event_id=event.event_id,
+                    symbol=getattr(event, "symbol", None),
+                    data={
+                        # Pass the actual event data for middleware access
+                        **(event.data or {}),
+                        # Also include event metadata for reference
+                        "event_metadata": {
+                            "event_type": event.event_type.value if event.event_type else None,
+                            "priority": event.priority.value if hasattr(event, "priority") else None,
+                        },
+                    },
+                    metadata={
+                        "processing_stage": "event_handler_invocation",
+                        "handler_count": len(self._subscriptions.get(event.event_type, [])),
+                        "timestamp": event.timestamp.isoformat() if event.timestamp else None,
+                        # Include event metadata for middleware access
+                        **(event.metadata or {}),
+                    },
+                )
+
+                # Execute middleware pipeline
+                result = await self._middleware_pipeline.execute(context)
+
+                # Check if middleware allows continuation
+                if not result.should_continue:
+                    # Safely get reason from result data
+                    reason = "No reason provided"
+                    if result.data is not None and isinstance(result.data, dict):
+                        reason = result.data.get("reason", "No reason provided")
+
+                    logger.info(
+                        "Event processing stopped by middleware",
+                        event_id=event.event_id,
+                        middleware_result=result.status.value,
+                        reason=reason,
+                    )
+                    return
+
+                # Update event data if middleware modified it
+                if result.modified_context is not None:
+                    # Middleware might have modified event data
+                    logger.debug(
+                        "Event processed through middleware", event_id=event.event_id, result_status=result.status.value
+                    )
+
             # Get subscriptions for this event type
             subscriptions = self._subscriptions.get(event.event_type, [])
 
@@ -762,24 +815,6 @@ class InMemoryEventBus(AbstractEventBus):
             raise ValueError("Timeout must be positive")
         self._handler_timeout = timeout
 
-    async def set_middleware_pipeline(self, pipeline: AbstractMiddlewarePipeline | None) -> None:
-        """
-        Sets the middleware pipeline for event processing.
-
-        Args:
-            pipeline: The middleware pipeline to set, or None to remove the current pipeline.
-        """
-        self._middleware_pipeline = pipeline
-
-    async def get_middleware_pipeline(self) -> AbstractMiddlewarePipeline | None:
-        """
-        Gets the currently configured middleware pipeline.
-
-        Returns:
-            The current middleware pipeline, or None if no pipeline is set.
-        """
-        return self._middleware_pipeline
-
     def get_queue_size(self) -> int:
         """Get the current number of events in the processing queue."""
         return self._event_queue.qsize()
@@ -828,6 +863,30 @@ class InMemoryEventBus(AbstractEventBus):
         self._paused = False
         if not self._closed and (self._processing_task is None or self._processing_task.done()):
             self._start_processing_task()
+
+    async def set_middleware_pipeline(self, pipeline: AbstractMiddlewarePipeline | None) -> None:
+        """
+        Sets the middleware pipeline for event processing.
+
+        The middleware pipeline will be executed before event handlers are invoked.
+        This allows for cross-cutting concerns like authentication, logging, rate limiting,
+        and metrics collection to be applied to all events consistently.
+
+        Args:
+            pipeline: The middleware pipeline to set, or None to remove the current pipeline.
+        """
+        self._ensure_not_closed()
+        self._middleware_pipeline = pipeline
+        logger.info(f"Middleware pipeline {'set' if pipeline else 'removed'} for event bus")
+
+    async def get_middleware_pipeline(self) -> AbstractMiddlewarePipeline | None:
+        """
+        Gets the currently configured middleware pipeline.
+
+        Returns:
+            The current middleware pipeline, or None if no pipeline is set.
+        """
+        return self._middleware_pipeline
 
     # Context manager support for automatic resource management
     async def __aenter__(self):

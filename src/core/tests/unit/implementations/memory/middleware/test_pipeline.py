@@ -370,3 +370,217 @@ class TestInMemoryMiddlewarePipeline:
         assert info["middleware_count"] == 3
         assert info["priority_distribution"] == {"HIGH": 1, "NORMAL": 2}
         assert len(info["middleware_names"]) == 3
+        assert "performance_stats" in info
+        assert "cache_status" in info
+
+    @pytest.mark.asyncio
+    async def test_is_empty(self):
+        """Test checking if pipeline is empty."""
+        pipeline = InMemoryMiddlewarePipeline()
+        
+        # Initially empty
+        assert await pipeline.is_empty() is True
+        
+        # Add middleware
+        middleware = self._create_test_middleware()
+        await pipeline.add_middleware(middleware)
+        
+        assert await pipeline.is_empty() is False
+        
+        # Clear pipeline
+        await pipeline.clear()
+        
+        assert await pipeline.is_empty() is True
+
+    @pytest.mark.asyncio
+    async def test_contains_middleware(self):
+        """Test checking if pipeline contains specific middleware."""
+        pipeline = InMemoryMiddlewarePipeline()
+        middleware1 = self._create_test_middleware(EventPriority.HIGH, name="Middleware1")
+        middleware2 = self._create_test_middleware(EventPriority.LOW, name="Middleware2")
+        
+        # Initially doesn't contain any middleware
+        assert await pipeline.contains_middleware(middleware1) is False
+        assert await pipeline.contains_middleware(middleware2) is False
+        
+        # Add one middleware
+        await pipeline.add_middleware(middleware1)
+        
+        assert await pipeline.contains_middleware(middleware1) is True
+        assert await pipeline.contains_middleware(middleware2) is False
+        
+        # Add second middleware
+        await pipeline.add_middleware(middleware2)
+        
+        assert await pipeline.contains_middleware(middleware1) is True
+        assert await pipeline.contains_middleware(middleware2) is True
+        
+        # Remove first middleware
+        await pipeline.remove_middleware(middleware1)
+        
+        assert await pipeline.contains_middleware(middleware1) is False
+        assert await pipeline.contains_middleware(middleware2) is True
+
+    @pytest.mark.unit
+    def test_performance_stats_initialization(self):
+        """Test performance statistics are initialized properly."""
+        pipeline = InMemoryMiddlewarePipeline()
+        
+        stats = pipeline.get_performance_stats()
+        
+        assert stats["pipeline_name"] == "InMemoryMiddlewarePipeline"
+        assert stats["total_executions"] == 0
+        assert stats["total_execution_time_ms"] == 0.0
+        assert stats["average_execution_time_ms"] == 0.0
+        assert stats["middleware_count"] == 0
+        assert "cache_status" in stats
+
+    @pytest.mark.asyncio
+    async def test_performance_stats_tracking(self):
+        """Test performance statistics are tracked during execution."""
+        pipeline = InMemoryMiddlewarePipeline()
+        middleware = self._create_test_middleware()
+        await pipeline.add_middleware(middleware)
+        
+        # Initial stats
+        stats = pipeline.get_performance_stats()
+        assert stats["total_executions"] == 0
+        
+        # Execute pipeline
+        context = MiddlewareContext(data="test")
+        await pipeline.execute(context)
+        
+        # Check stats updated
+        stats = pipeline.get_performance_stats()
+        assert stats["total_executions"] == 1
+        assert stats["total_execution_time_ms"] > 0
+        assert stats["average_execution_time_ms"] > 0
+        assert stats["middleware_count"] == 1
+        
+        # Execute again
+        await pipeline.execute(context)
+        
+        # Check stats updated again
+        stats = pipeline.get_performance_stats()
+        assert stats["total_executions"] == 2
+        assert stats["total_execution_time_ms"] > 0
+        assert stats["average_execution_time_ms"] > 0
+
+    @pytest.mark.unit
+    def test_reset_performance_stats(self):
+        """Test resetting performance statistics."""
+        pipeline = InMemoryMiddlewarePipeline()
+        
+        # Simulate some executions by directly setting stats
+        with pipeline._lock:
+            pipeline._execution_count = 5
+            pipeline._total_execution_time_ms = 1000.0
+            pipeline._average_execution_time_ms = 200.0
+        
+        # Verify stats before reset
+        stats = pipeline.get_performance_stats()
+        assert stats["total_executions"] == 5
+        assert stats["total_execution_time_ms"] == 1000.0
+        assert stats["average_execution_time_ms"] == 200.0
+        
+        # Reset stats
+        pipeline.reset_performance_stats()
+        
+        # Verify stats after reset
+        stats = pipeline.get_performance_stats()
+        assert stats["total_executions"] == 0
+        assert stats["total_execution_time_ms"] == 0.0
+        assert stats["average_execution_time_ms"] == 0.0
+
+    @pytest.mark.asyncio
+    async def test_thread_safety_basic(self):
+        """Test basic thread safety operations."""
+        import threading
+        import asyncio
+        
+        pipeline = InMemoryMiddlewarePipeline()
+        middleware_list = []
+        
+        # Create multiple middleware
+        for i in range(10):
+            middleware = self._create_test_middleware(name=f"Middleware{i}")
+            middleware_list.append(middleware)
+        
+        # Function to add middleware in thread
+        async def add_middleware_worker(middleware):
+            await pipeline.add_middleware(middleware)
+        
+        # Function to remove middleware in thread
+        async def remove_middleware_worker(middleware):
+            try:
+                await pipeline.remove_middleware(middleware)
+            except ValueError:
+                pass  # Middleware might have been removed by another thread
+        
+        # Add all middleware concurrently
+        tasks = []
+        for middleware in middleware_list:
+            task = asyncio.create_task(add_middleware_worker(middleware))
+            tasks.append(task)
+        
+        await asyncio.gather(*tasks)
+        
+        # Check all middleware were added
+        count = await pipeline.get_middleware_count()
+        assert count == 10
+        
+        # Remove half of them concurrently
+        tasks = []
+        for middleware in middleware_list[:5]:
+            task = asyncio.create_task(remove_middleware_worker(middleware))
+            tasks.append(task)
+        
+        await asyncio.gather(*tasks)
+        
+        # Check remaining middleware
+        count = await pipeline.get_middleware_count()
+        assert count == 5
+
+    @pytest.mark.asyncio
+    async def test_execution_id_tracking(self):
+        """Test that execution IDs are properly tracked in metadata."""
+        pipeline = InMemoryMiddlewarePipeline()
+        middleware = self._create_test_middleware()
+        await pipeline.add_middleware(middleware)
+        
+        context = MiddlewareContext(data="test")
+        result = await pipeline.execute(context)
+        
+        # Check execution ID in metadata
+        assert "execution_id" in result.metadata
+        assert result.metadata["execution_id"] == 1
+        
+        # Execute again
+        result2 = await pipeline.execute(context)
+        assert result2.metadata["execution_id"] == 2
+
+    @pytest.mark.asyncio 
+    async def test_logging_integration(self):
+        """Test that logging is properly integrated."""
+        import logging
+        from unittest.mock import Mock
+        
+        pipeline = InMemoryMiddlewarePipeline("TestPipeline")
+        
+        # Mock the logger
+        mock_logger = Mock()
+        pipeline._logger = mock_logger
+        
+        middleware = self._create_test_middleware()
+        await pipeline.add_middleware(middleware)
+        
+        # Verify add_middleware logged
+        mock_logger.debug.assert_called()
+        mock_logger.info.assert_called()
+        
+        # Execute pipeline
+        context = MiddlewareContext(data="test")
+        await pipeline.execute(context)
+        
+        # Verify execution was logged
+        assert mock_logger.info.call_count >= 2  # At least start and completion logs

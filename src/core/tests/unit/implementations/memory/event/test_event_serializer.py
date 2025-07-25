@@ -225,8 +225,8 @@ class TestMemoryEventSerializer:
         trade = Trade(
             symbol="BTC/USDT",
             trade_id="12345",
-            price=Decimal("45000.123456789"),  # High precision decimal
-            quantity=Decimal("0.000001"),  # Small decimal
+            price=Decimal("45000.12345678"),  # 8 decimal precision decimal
+            quantity=Decimal("0.00000001"),  # Small decimal with proper precision
             side=TradeSide.SELL,
             timestamp=datetime.now(UTC),
             is_buyer_maker=False,

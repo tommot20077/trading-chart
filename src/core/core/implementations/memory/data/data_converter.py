@@ -10,6 +10,7 @@ from core.interfaces.data.converter import AbstractDataConverter
 from core.models.data.kline import Kline
 from core.models.data.trade import Trade
 from core.models.data.enum import TradeSide, AssetClass, KlineInterval
+from core.config.market_limits import get_market_limits_config
 
 
 class InMemoryDataConverter(AbstractDataConverter):
@@ -59,13 +60,19 @@ class InMemoryDataConverter(AbstractDataConverter):
             # Extract trade ID
             trade_id = self._extract_field(raw_trade, ["id", "trade_id", "tradeId"], required=True)
 
-            # Extract price
-            price_raw = self._extract_field(raw_trade, ["price", "p"], required=True)
-            price = Decimal(str(price_raw))
+            # Get market limits for precision
+            config = get_market_limits_config()
+            limits = config.get_limits(symbol)
 
-            # Extract quantity
+            # Extract price and quantize to proper precision
+            price_raw = self._extract_field(raw_trade, ["price", "p"], required=True)
+            price_precision = Decimal("0.1") ** limits.price_precision
+            price = Decimal(str(price_raw)).quantize(price_precision)
+
+            # Extract quantity and quantize to proper precision
             qty_raw = self._extract_field(raw_trade, ["quantity", "qty", "amount", "q"], required=True)
-            quantity = Decimal(str(qty_raw))
+            quantity_precision = Decimal("0.1") ** limits.quantity_precision
+            quantity = Decimal(str(qty_raw)).quantize(quantity_precision)
 
             # Extract side
             side_raw = self._extract_field(raw_trade, ["side", "s"], required=True)
@@ -147,17 +154,33 @@ class InMemoryDataConverter(AbstractDataConverter):
             close_time_raw = self._extract_field(raw_kline, ["close_time", "closeTime", "T"], required=True)
             close_time = self._parse_timestamp(close_time_raw)
 
-            # Extract OHLC prices
-            open_price = Decimal(str(self._extract_field(raw_kline, ["open", "o"], required=True)))
-            high_price = Decimal(str(self._extract_field(raw_kline, ["high", "h"], required=True)))
-            low_price = Decimal(str(self._extract_field(raw_kline, ["low", "l"], required=True)))
-            close_price = Decimal(str(self._extract_field(raw_kline, ["close", "c"], required=True)))
+            # Get market limits for precision
+            config = get_market_limits_config()
+            limits = config.get_limits(symbol)
 
-            # Extract volumes
-            volume = Decimal(str(self._extract_field(raw_kline, ["volume", "v"], required=True)))
+            # Extract OHLC prices and quantize to proper precision
+            price_precision = Decimal("0.1") ** limits.price_precision
+            open_price = Decimal(str(self._extract_field(raw_kline, ["open", "o"], required=True))).quantize(
+                price_precision
+            )
+            high_price = Decimal(str(self._extract_field(raw_kline, ["high", "h"], required=True))).quantize(
+                price_precision
+            )
+            low_price = Decimal(str(self._extract_field(raw_kline, ["low", "l"], required=True))).quantize(
+                price_precision
+            )
+            close_price = Decimal(str(self._extract_field(raw_kline, ["close", "c"], required=True))).quantize(
+                price_precision
+            )
+
+            # Extract volumes and quantize to proper precision
+            quantity_precision = Decimal("0.1") ** limits.quantity_precision
+            volume = Decimal(str(self._extract_field(raw_kline, ["volume", "v"], required=True))).quantize(
+                quantity_precision
+            )
             quote_volume = Decimal(
                 str(self._extract_field(raw_kline, ["quote_volume", "quoteVolume", "qv"], required=True))
-            )
+            ).quantize(quantity_precision)
 
             # Extract trade count
             trades_count = int(self._extract_field(raw_kline, ["trades_count", "count", "n"], required=True))
@@ -174,10 +197,16 @@ class InMemoryDataConverter(AbstractDataConverter):
             )
             is_closed = self._extract_field(raw_kline, ["is_closed", "isClosed"], default=True)
 
-            # Convert optional volumes
-            taker_buy_volume = Decimal(str(taker_buy_volume_raw)) if taker_buy_volume_raw is not None else None
+            # Convert optional volumes and quantize
+            taker_buy_volume = (
+                Decimal(str(taker_buy_volume_raw)).quantize(quantity_precision)
+                if taker_buy_volume_raw is not None
+                else None
+            )
             taker_buy_quote_volume = (
-                Decimal(str(taker_buy_quote_volume_raw)) if taker_buy_quote_volume_raw is not None else None
+                Decimal(str(taker_buy_quote_volume_raw)).quantize(quantity_precision)
+                if taker_buy_quote_volume_raw is not None
+                else None
             )
 
             return Kline(

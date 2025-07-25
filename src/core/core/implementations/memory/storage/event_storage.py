@@ -4,7 +4,7 @@
 import uuid
 import asyncio
 from datetime import datetime, timedelta
-from typing import List, AsyncIterator
+from typing import List, AsyncIterator, Dict, cast
 from collections import defaultdict
 
 from core.interfaces.event.event_storage import AbstractEventStorage
@@ -14,6 +14,7 @@ from core.models.data.event import BaseEvent
 from core.models.event.event_query import EventQuery
 from core.models.event.event_storage_stats import EventStorageStats
 from core.exceptions.base import StorageError
+from core.models.types import MetadataValue
 
 
 class InMemoryEventStorage(AbstractEventStorage):
@@ -76,7 +77,7 @@ class InMemoryEventStorage(AbstractEventStorage):
 
             # Store event data
             event_key = f"event:{storage_id}"
-            event_data = {
+            event_data: Dict[str, MetadataValue] = {
                 "data": serialized_data.decode("utf-8"),
                 "event_type": event.event_type.value,
                 "symbol": event.symbol,
@@ -84,7 +85,7 @@ class InMemoryEventStorage(AbstractEventStorage):
                 "timestamp": event.timestamp.isoformat(),
                 "priority": event.priority.value,
                 "correlation_id": event.correlation_id,
-                "metadata": event.metadata,
+                "metadata": cast(MetadataValue, event.metadata),
             }
 
             await self._metadata_repo.set(event_key, event_data)
@@ -127,7 +128,7 @@ class InMemoryEventStorage(AbstractEventStorage):
 
                 # Prepare event data
                 event_key = f"event:{storage_id}"
-                event_data = {
+                event_data: Dict[str, MetadataValue] = {
                     "data": serialized_data.decode("utf-8"),
                     "event_type": event.event_type.value,
                     "symbol": event.symbol,
@@ -135,7 +136,7 @@ class InMemoryEventStorage(AbstractEventStorage):
                     "timestamp": event.timestamp.isoformat(),
                     "priority": event.priority.value,
                     "correlation_id": event.correlation_id,
-                    "metadata": event.metadata,
+                    "metadata": cast(MetadataValue, event.metadata),
                 }
 
                 batch_data[event_key] = event_data
@@ -343,13 +344,14 @@ class InMemoryEventStorage(AbstractEventStorage):
 
                 for event_key in event_keys:
                     event_data = await self._metadata_repo.get(event_key)
-                    if event_data:
+                    if isinstance(event_data, dict):
                         event_type = event_data.get("event_type", "unknown")
-                        events_by_type[event_type] += 1
+                        if isinstance(event_type, str):
+                            events_by_type[event_type] += 1
 
                         # Track timestamps
                         timestamp_str = event_data.get("timestamp")
-                        if timestamp_str:
+                        if isinstance(timestamp_str, str):
                             timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
                             if oldest_time is None or timestamp < oldest_time:
                                 oldest_time = timestamp
@@ -357,8 +359,10 @@ class InMemoryEventStorage(AbstractEventStorage):
                                 newest_time = timestamp
 
                         # Estimate size
-                        data_size = len(event_data.get("data", ""))
-                        total_size += data_size
+                        data_field = event_data.get("data", "")
+                        if isinstance(data_field, str):
+                            data_size = len(data_field)
+                            total_size += data_size
 
                 avg_size = total_size / total_events if total_events > 0 else 0.0
 
@@ -403,21 +407,30 @@ class InMemoryEventStorage(AbstractEventStorage):
         # Type index
         type_key = f"index:type:{event.event_type.value}"
         type_index = await self._metadata_repo.get(type_key) or {"event_ids": []}
-        type_index["event_ids"].append(storage_id)
-        await self._metadata_repo.set(type_key, type_index)
+        event_ids = type_index.get("event_ids", [])
+        if isinstance(event_ids, list):
+            event_ids.append(storage_id)
+            type_index["event_ids"] = event_ids
+            await self._metadata_repo.set(type_key, type_index)
 
         # Symbol index
         if event.symbol:
             symbol_key = f"index:symbol:{event.symbol}"
             symbol_index = await self._metadata_repo.get(symbol_key) or {"event_ids": []}
-            symbol_index["event_ids"].append(storage_id)
-            await self._metadata_repo.set(symbol_key, symbol_index)
+            event_ids = symbol_index.get("event_ids", [])
+            if isinstance(event_ids, list):
+                event_ids.append(storage_id)
+                symbol_index["event_ids"] = event_ids
+                await self._metadata_repo.set(symbol_key, symbol_index)
 
         # Source index
         source_key = f"index:source:{event.source}"
         source_index = await self._metadata_repo.get(source_key) or {"event_ids": []}
-        source_index["event_ids"].append(storage_id)
-        await self._metadata_repo.set(source_key, source_index)
+        event_ids = source_index.get("event_ids", [])
+        if isinstance(event_ids, list):
+            event_ids.append(storage_id)
+            source_index["event_ids"] = event_ids
+            await self._metadata_repo.set(source_key, source_index)
 
     async def _batch_update_indexes(self, batch_updates: List[tuple[str, BaseEvent]]) -> None:
         """Update indexes for multiple events in batch."""
@@ -444,22 +457,31 @@ class InMemoryEventStorage(AbstractEventStorage):
         for event_type, storage_ids in type_updates.items():
             type_key = f"index:type:{event_type}"
             type_index = await self._metadata_repo.get(type_key) or {"event_ids": []}
-            type_index["event_ids"].extend(storage_ids)
-            await self._metadata_repo.set(type_key, type_index)
+            event_ids = type_index.get("event_ids", [])
+            if isinstance(event_ids, list):
+                event_ids.extend(storage_ids)
+                type_index["event_ids"] = event_ids
+                await self._metadata_repo.set(type_key, type_index)
 
         # Update symbol indexes
         for symbol, storage_ids in symbol_updates.items():
             symbol_key = f"index:symbol:{symbol}"
             symbol_index = await self._metadata_repo.get(symbol_key) or {"event_ids": []}
-            symbol_index["event_ids"].extend(storage_ids)
-            await self._metadata_repo.set(symbol_key, symbol_index)
+            event_ids = symbol_index.get("event_ids", [])
+            if isinstance(event_ids, list):
+                event_ids.extend(storage_ids)
+                symbol_index["event_ids"] = event_ids
+                await self._metadata_repo.set(symbol_key, symbol_index)
 
         # Update source indexes
         for source, storage_ids in source_updates.items():
             source_key = f"index:source:{source}"
             source_index = await self._metadata_repo.get(source_key) or {"event_ids": []}
-            source_index["event_ids"].extend(storage_ids)
-            await self._metadata_repo.set(source_key, source_index)
+            event_ids = source_index.get("event_ids", [])
+            if isinstance(event_ids, list):
+                event_ids.extend(storage_ids)
+                source_index["event_ids"] = event_ids
+                await self._metadata_repo.set(source_key, source_index)
 
     async def _transactional_update_indexes(self, storage_id: str, event: BaseEvent) -> None:
         """Update indexes for a single event with transactional safety."""
@@ -471,35 +493,63 @@ class InMemoryEventStorage(AbstractEventStorage):
                 # Type index
                 type_key = f"index:type:{event.event_type.value}"
                 original_states[type_key] = await self._metadata_repo.get(type_key)
-                type_index = original_states[type_key] or {"event_ids": []}
-                type_index = {"event_ids": type_index["event_ids"].copy()}
-                type_index["event_ids"].append(storage_id)
-                await self._metadata_repo.set(type_key, type_index)
+                type_index_raw = original_states[type_key] or {"event_ids": []}
+                if isinstance(type_index_raw, dict) and "event_ids" in type_index_raw:
+                    event_ids = type_index_raw["event_ids"]
+                    if isinstance(event_ids, list):
+                        type_index = {"event_ids": event_ids.copy()}
+                        type_index["event_ids"].append(storage_id)
+                    else:
+                        type_index = {"event_ids": [storage_id]}
+                else:
+                    type_index = {"event_ids": [storage_id]}
+                await self._metadata_repo.set(type_key, cast(Dict[str, MetadataValue], type_index))
 
                 # Symbol index
                 if event.symbol:
                     symbol_key = f"index:symbol:{event.symbol}"
                     original_states[symbol_key] = await self._metadata_repo.get(symbol_key)
-                    symbol_index = original_states[symbol_key] or {"event_ids": []}
-                    symbol_index = {"event_ids": symbol_index["event_ids"].copy()}
-                    symbol_index["event_ids"].append(storage_id)
-                    await self._metadata_repo.set(symbol_key, symbol_index)
+                    symbol_index_raw = original_states[symbol_key] or {"event_ids": []}
+                    if isinstance(symbol_index_raw, dict) and "event_ids" in symbol_index_raw:
+                        event_ids = symbol_index_raw["event_ids"]
+                        if isinstance(event_ids, list):
+                            symbol_index = {"event_ids": event_ids.copy()}
+                            symbol_index["event_ids"].append(storage_id)
+                        else:
+                            symbol_index = {"event_ids": [storage_id]}
+                    else:
+                        symbol_index = {"event_ids": [storage_id]}
+                    await self._metadata_repo.set(symbol_key, cast(Dict[str, MetadataValue], symbol_index))
 
                 # Source index
                 source_key = f"index:source:{event.source}"
                 original_states[source_key] = await self._metadata_repo.get(source_key)
-                source_index = original_states[source_key] or {"event_ids": []}
-                source_index = {"event_ids": source_index["event_ids"].copy()}
-                source_index["event_ids"].append(storage_id)
-                await self._metadata_repo.set(source_key, source_index)
+                source_index_raw = original_states[source_key] or {"event_ids": []}
+                if isinstance(source_index_raw, dict) and "event_ids" in source_index_raw:
+                    event_ids = source_index_raw["event_ids"]
+                    if isinstance(event_ids, list):
+                        source_index = {"event_ids": event_ids.copy()}
+                        cast(List[str], source_index["event_ids"]).append(storage_id)
+                    else:
+                        source_index = {"event_ids": [storage_id]}
+                else:
+                    source_index = {"event_ids": [storage_id]}
+                await self._metadata_repo.set(source_key, cast(Dict[str, MetadataValue], source_index))
 
                 # Time-based index (hourly shards)
                 time_key = self._get_time_shard_key(event.timestamp)
                 original_states[time_key] = await self._metadata_repo.get(time_key)
-                time_index = original_states[time_key] or {"event_ids": []}
-                time_index = {"event_ids": time_index["event_ids"].copy()}
-                time_index["event_ids"].append(storage_id)
-                await self._metadata_repo.set(time_key, time_index)
+                time_index_raw = original_states[time_key] or {"event_ids": []}
+                if isinstance(time_index_raw, dict) and "event_ids" in time_index_raw:
+                    event_ids = time_index_raw["event_ids"]
+                    if isinstance(event_ids, list):
+                        time_index = {"event_ids": event_ids.copy()}
+                        time_index["event_ids"].append(storage_id)
+                    else:
+                        time_index = {"event_ids": [storage_id]}
+                else:
+                    time_index = {"event_ids": [storage_id]}
+                await self._metadata_repo.set(time_key, cast(Dict[str, MetadataValue], time_index))
 
             except Exception as e:
                 # Rollback on error
@@ -545,36 +595,52 @@ class InMemoryEventStorage(AbstractEventStorage):
                 for event_type, storage_ids in type_updates.items():
                     type_key = f"index:type:{event_type}"
                     original_states[type_key] = await self._metadata_repo.get(type_key)
-                    type_index = original_states[type_key] or {"event_ids": []}
-                    type_index = {"event_ids": type_index["event_ids"].copy()}
-                    type_index["event_ids"].extend(storage_ids)
-                    await self._metadata_repo.set(type_key, type_index)
+                    type_index_raw = original_states[type_key] or {"event_ids": []}
+                    if isinstance(type_index_raw, dict) and "event_ids" in type_index_raw:
+                        event_ids = type_index_raw["event_ids"]
+                        if isinstance(event_ids, list):
+                            type_index = {"event_ids": event_ids.copy()}
+                            cast(List[str], type_index["event_ids"]).extend(storage_ids)
+                        else:
+                            type_index = {"event_ids": list(storage_ids)}
+                    else:
+                        type_index = {"event_ids": list(storage_ids)}
+                    await self._metadata_repo.set(type_key, cast(Dict[str, MetadataValue], type_index))
 
                 # Update symbol indexes
                 for symbol, storage_ids in symbol_updates.items():
                     symbol_key = f"index:symbol:{symbol}"
                     original_states[symbol_key] = await self._metadata_repo.get(symbol_key)
-                    symbol_index = original_states[symbol_key] or {"event_ids": []}
-                    symbol_index = {"event_ids": symbol_index["event_ids"].copy()}
-                    symbol_index["event_ids"].extend(storage_ids)
-                    await self._metadata_repo.set(symbol_key, symbol_index)
+                    symbol_index_raw = original_states[symbol_key] or {"event_ids": []}
+                    if isinstance(symbol_index_raw, dict) and "event_ids" in symbol_index_raw:
+                        event_ids = symbol_index_raw["event_ids"]
+                        if isinstance(event_ids, list):
+                            symbol_index = {"event_ids": cast(list, event_ids.copy())}
+                            cast(list, symbol_index["event_ids"]).extend(storage_ids)
+                        else:
+                            symbol_index = {"event_ids": list(storage_ids)}
+                    else:
+                        symbol_index = {"event_ids": list(storage_ids)}
+                    await self._metadata_repo.set(symbol_key, cast(Dict[str, MetadataValue], symbol_index))
 
                 # Update source indexes
                 for source, storage_ids in source_updates.items():
                     source_key = f"index:source:{source}"
                     original_states[source_key] = await self._metadata_repo.get(source_key)
-                    source_index = original_states[source_key] or {"event_ids": []}
-                    source_index = {"event_ids": source_index["event_ids"].copy()}
-                    source_index["event_ids"].extend(storage_ids)
-                    await self._metadata_repo.set(source_key, source_index)
+                    source_index_data = original_states[source_key] or {"event_ids": []}
+                    source_index = self._ensure_index_structure(source_index_data)
+                    source_index = {"event_ids": cast(List[str], source_index["event_ids"]).copy()}
+                    cast(List[str], source_index["event_ids"]).extend(storage_ids)
+                    await self._metadata_repo.set(source_key, cast(Dict[str, MetadataValue], source_index))
 
                 # Update time indexes
                 for time_shard, storage_ids in time_updates.items():
                     original_states[time_shard] = await self._metadata_repo.get(time_shard)
-                    time_index = original_states[time_shard] or {"event_ids": []}
-                    time_index = {"event_ids": time_index["event_ids"].copy()}
-                    time_index["event_ids"].extend(storage_ids)
-                    await self._metadata_repo.set(time_shard, time_index)
+                    time_index_data = original_states[time_shard] or {"event_ids": []}
+                    time_index = self._ensure_index_structure(time_index_data)
+                    time_index = {"event_ids": cast(List[str], time_index["event_ids"]).copy()}
+                    cast(List[str], time_index["event_ids"]).extend(storage_ids)
+                    await self._metadata_repo.set(time_shard, cast(Dict[str, MetadataValue], time_index))
 
             except Exception as e:
                 # Rollback on error
@@ -591,8 +657,9 @@ class InMemoryEventStorage(AbstractEventStorage):
         type_key = f"index:type:{event.event_type.value}"
         type_index = await self._metadata_repo.get(type_key)
         if type_index and "event_ids" in type_index:
-            if storage_id in type_index["event_ids"]:
-                type_index["event_ids"].remove(storage_id)
+            event_ids = type_index["event_ids"]
+            if isinstance(event_ids, list) and storage_id in event_ids:
+                event_ids.remove(storage_id)
                 await self._metadata_repo.set(type_key, type_index)
 
         # Symbol index
@@ -600,25 +667,28 @@ class InMemoryEventStorage(AbstractEventStorage):
             symbol_key = f"index:symbol:{event.symbol}"
             symbol_index = await self._metadata_repo.get(symbol_key)
             if symbol_index and "event_ids" in symbol_index:
-                if storage_id in symbol_index["event_ids"]:
-                    symbol_index["event_ids"].remove(storage_id)
+                event_ids = symbol_index["event_ids"]
+                if isinstance(event_ids, list) and storage_id in event_ids:
+                    event_ids.remove(storage_id)
                     await self._metadata_repo.set(symbol_key, symbol_index)
 
         # Source index
         source_key = f"index:source:{event.source}"
         source_index = await self._metadata_repo.get(source_key)
         if source_index and "event_ids" in source_index:
-            if storage_id in source_index["event_ids"]:
-                source_index["event_ids"].remove(storage_id)
+            event_ids = source_index["event_ids"]
+            if isinstance(event_ids, list) and storage_id in event_ids:
+                event_ids.remove(storage_id)
                 await self._metadata_repo.set(source_key, source_index)
 
         # Time index
         time_key = self._get_time_shard_key(event.timestamp)
         time_index = await self._metadata_repo.get(time_key)
         if time_index and "event_ids" in time_index:
-            if storage_id in time_index["event_ids"]:
-                time_index["event_ids"].remove(storage_id)
-                await self._metadata_repo.set(time_key, time_index)
+            event_ids = time_index["event_ids"]
+            if isinstance(event_ids, list) and storage_id in event_ids:
+                event_ids.remove(storage_id)
+                await self._metadata_repo.set(time_key, cast(Dict[str, MetadataValue], time_index))
 
     async def _get_candidate_event_ids(self, query: EventQuery) -> List[str]:
         """Get candidate event IDs based on query filters."""
@@ -631,32 +701,38 @@ class InMemoryEventStorage(AbstractEventStorage):
 
         # Filter by event types
         if query.event_types:
-            type_candidates = set()
+            type_candidates: set[str] = set()
             for event_type in query.event_types:
                 type_key = f"index:type:{event_type.value}"
                 type_index = await self._metadata_repo.get(type_key)
                 if type_index and "event_ids" in type_index:
-                    type_candidates.update(type_index["event_ids"])
+                    event_ids = type_index["event_ids"]
+                    if isinstance(event_ids, list):
+                        type_candidates.update(event_ids)
             candidate_sets.append(type_candidates)
 
         # Filter by symbols
         if query.symbols:
-            symbol_candidates = set()
+            symbol_candidates: set[str] = set()
             for symbol in query.symbols:
                 symbol_key = f"index:symbol:{symbol}"
                 symbol_index = await self._metadata_repo.get(symbol_key)
                 if symbol_index and "event_ids" in symbol_index:
-                    symbol_candidates.update(symbol_index["event_ids"])
+                    event_ids = symbol_index["event_ids"]
+                    if isinstance(event_ids, list):
+                        symbol_candidates.update(event_ids)
             candidate_sets.append(symbol_candidates)
 
         # Filter by sources
         if query.sources:
-            source_candidates = set()
+            source_candidates: set[str] = set()
             for source in query.sources:
                 source_key = f"index:source:{source}"
                 source_index = await self._metadata_repo.get(source_key)
                 if source_index and "event_ids" in source_index:
-                    source_candidates.update(source_index["event_ids"])
+                    event_ids = source_index["event_ids"]
+                    if isinstance(event_ids, list):
+                        source_candidates.update(event_ids)
             candidate_sets.append(source_candidates)
 
         # If no specific filters, get all events
@@ -737,7 +813,7 @@ class InMemoryEventStorage(AbstractEventStorage):
             all_event_keys = await self._metadata_repo.list_keys("event:")
             return {key.replace("event:", "") for key in all_event_keys}
 
-        candidate_ids = set()
+        candidate_ids: set[str] = set()
 
         # Generate all time shards that fall within the time range
         current_time = start_time.replace(minute=0, second=0, microsecond=0) if start_time else None
@@ -749,7 +825,25 @@ class InMemoryEventStorage(AbstractEventStorage):
                 time_shard_key = self._get_time_shard_key(current_time)
                 time_index = await self._metadata_repo.get(time_shard_key)
                 if time_index and "event_ids" in time_index:
-                    candidate_ids.update(time_index["event_ids"])
+                    event_ids = time_index["event_ids"]
+                    if isinstance(event_ids, list):
+                        candidate_ids.update(event_ids)
                 current_time = current_time + timedelta(hours=1)
 
         return candidate_ids
+
+    def _ensure_index_structure(self, index_data: Dict[str, MetadataValue] | None) -> Dict[str, List[str]]:
+        """Ensure index data has the expected structure with event_ids as a list of strings."""
+        if not index_data:
+            return {"event_ids": []}
+
+        if not isinstance(index_data, dict):
+            return {"event_ids": []}
+
+        event_ids = index_data.get("event_ids", [])
+        if not isinstance(event_ids, list):
+            return {"event_ids": []}
+
+        # Ensure all event IDs are strings
+        str_event_ids = [str(eid) for eid in event_ids if eid is not None]
+        return {"event_ids": str_event_ids}

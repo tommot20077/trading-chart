@@ -1,3 +1,6 @@
+# ABOUTME: Abstract event bus interface for publish-subscribe event system
+# ABOUTME: Defines the contract for components that manage event publishing, subscription, and delivery
+
 from abc import abstractmethod, ABC
 from typing import Callable, Awaitable, Optional
 
@@ -40,6 +43,10 @@ class AbstractEventBus(ABC):
 
         Returns:
             None: This method does not return a value.
+
+        Raises:
+            EventBusError: If the event cannot be published (e.g., closed bus, internal error).
+            MiddlewareExecutionError: If middleware pipeline fails during event processing.
         """
         pass
 
@@ -91,6 +98,9 @@ class AbstractEventBus(ABC):
 
         Returns:
             bool: `True` if the subscription was found and successfully removed, `False` otherwise.
+
+        Raises:
+            EventBusError: If the unsubscription operation fails due to internal error.
         """
         pass
 
@@ -109,6 +119,9 @@ class AbstractEventBus(ABC):
 
         Returns:
             int: The number of handlers that were successfully unsubscribed.
+
+        Raises:
+            EventBusError: If the unsubscription operation fails due to internal error.
         """
         pass
 
@@ -124,6 +137,9 @@ class AbstractEventBus(ABC):
 
         Returns:
             None: This method does not return a value.
+
+        Raises:
+            EventBusError: If the close operation fails (e.g., resource cleanup error).
         """
         pass
 
@@ -206,6 +222,9 @@ class AbstractEventBus(ABC):
 
         Returns:
             None: This method does not return a value.
+
+        Raises:
+            EventBusError: If the pipeline cannot be set (e.g., invalid pipeline state).
         """
         pass
 

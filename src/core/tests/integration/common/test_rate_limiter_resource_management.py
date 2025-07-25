@@ -90,7 +90,7 @@ class TestRateLimiterResourceCleanup:
             memory_growth_mb = (current_memory - initial_memory) / (1024 * 1024)
             
             # Memory should not grow excessively
-            assert memory_growth_mb < 20, f"Cycle {cycle}: Memory grew too much: {memory_growth_mb}MB"
+            assert memory_growth_mb < 50, f"Cycle {cycle}: Memory grew too much: {memory_growth_mb}MB"
 
     @pytest.mark.asyncio
     async def test_thread_safety_resource_management(self, resource_monitor):

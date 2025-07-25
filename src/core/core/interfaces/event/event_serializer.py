@@ -1,3 +1,6 @@
+# ABOUTME: Abstract event serializer interface for event data serialization and deserialization
+# ABOUTME: Defines the contract for components that convert events between object and byte representations
+
 from abc import ABC, abstractmethod
 
 from core.models.data.event import BaseEvent

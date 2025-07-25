@@ -219,5 +219,8 @@ class AbstractEventStorage(ABC):
 
         Returns:
             None: This method does not return any value.
+
+        Raises:
+            EventStorageError: If cleanup fails (e.g., cannot close connections).
         """
         pass

@@ -19,6 +19,7 @@ class MiddlewareStatus(str, Enum):
     FAILED = "failed"
     SKIPPED = "skipped"
     CANCELLED = "cancelled"
+    BLOCKED = "blocked"
 
 
 class MiddlewareResult(BaseModel):

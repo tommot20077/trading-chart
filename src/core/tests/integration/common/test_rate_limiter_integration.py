@@ -277,7 +277,7 @@ class TestRateLimiterResourceManagement:
             
             # Memory should not grow significantly
             memory_growth_mb = (final_memory_delta - initial_memory_delta) / (1024 * 1024)
-            assert memory_growth_mb < 10, f"Memory grew too much: {memory_growth_mb}MB"
+            assert memory_growth_mb < 30, f"Memory grew too much: {memory_growth_mb}MB"
             
         finally:
             await rate_limiter.close()

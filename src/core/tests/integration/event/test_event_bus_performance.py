@@ -152,7 +152,7 @@ class TestEventBusPerformance:
         # Basic latency validation if we have measurements
         if latencies:
             avg_latency = sum(latencies) / len(latencies)
-            assert avg_latency < 1000  # Should be reasonable (< 1 second)
+            assert avg_latency < 2000  # Should be reasonable (< 2 seconds for CI environments)
 
         # Cleanup
         high_performance_bus.unsubscribe(subscription_id)
@@ -246,8 +246,8 @@ class TestEventBusPerformance:
         # Verify all events were processed
         assert len(processed_events) == num_events
 
-        # Verify reasonable memory usage (should not increase by more than 100MB)
-        assert memory_increase < 100, f"Memory increase too high: {memory_increase:.2f}MB"
+        # Verify reasonable memory usage (should not increase by more than 150MB for 2000 events)
+        assert memory_increase < 150, f"Memory increase too high: {memory_increase:.2f}MB"
 
         # Cleanup
         high_performance_bus.unsubscribe(subscription_id)

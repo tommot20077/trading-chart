@@ -11,7 +11,7 @@ from typing import Dict
 from core.implementations.memory.storage.event_storage import InMemoryEventStorage
 from core.implementations.memory.storage.metadata_repository import InMemoryMetadataRepository
 from core.implementations.memory.event.event_serializer import MemoryEventSerializer
-from core.implementations.noop.event_storage import NoOpEventStorage
+from core.implementations.noop.storage.event_storage import NoOpEventStorage
 from core.implementations.noop.storage.metadata_repository import NoOpMetadataRepository
 from core.models.event.trade_event import TradeEvent
 from core.models.event.event_type import EventType

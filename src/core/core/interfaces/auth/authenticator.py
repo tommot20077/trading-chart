@@ -1,3 +1,6 @@
+# ABOUTME: Abstract authenticator interface for user authentication and request validation
+# ABOUTME: Defines the contract for components that extract and validate authentication credentials
+
 from abc import ABC, abstractmethod
 
 from core.models.auth.auth_request import AuthRequest

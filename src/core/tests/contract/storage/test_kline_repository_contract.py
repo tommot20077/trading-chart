@@ -10,6 +10,7 @@ from core.interfaces.storage.Kline_repository import AbstractKlineRepository
 from core.models.data.kline import Kline
 from core.models.data.enum import KlineInterval
 from core.models.storage.query_option import QueryOptions
+from core.models.types import StatisticsResult
 from ..base_contract_test import ContractTestBase, AsyncContractTestMixin, ResourceManagementContractMixin
 
 
@@ -267,7 +268,7 @@ class MockKlineRepository(AbstractKlineRepository):
         interval: KlineInterval,
         start_time: datetime | None = None,
         end_time: datetime | None = None,
-    ) -> dict[str, Any]:
+    ) -> StatisticsResult:
         """Get statistics for klines within optional time range for a specific interval."""
         self._check_not_closed()
 
@@ -285,33 +286,52 @@ class MockKlineRepository(AbstractKlineRepository):
             filtered = klines
 
         if not filtered:
-            return {
-                "count": 0,
-                "earliest": None,
-                "latest": None,
-                "total_volume": "0",
-                "avg_volume": "0",
-                "price_range": {"min": None, "max": None},
-            }
+            return StatisticsResult(
+                count=0,
+                min_timestamp=None,
+                max_timestamp=None,
+                earliest_timestamp=None,
+                latest_timestamp=None,
+                storage_size_bytes=0,
+                avg_size_bytes=0.0,
+                price_statistics={"min": 0.0, "max": 0.0, "avg": 0.0},
+                volume_statistics={"total": 0.0, "avg": 0.0},
+                data_statistics={}
+            )
 
-        total_volume = sum(k.volume for k in filtered)
+        earliest_kline = min(filtered, key=lambda k: k.open_time)
+        latest_kline = max(filtered, key=lambda k: k.open_time)
+        
+        total_volume = float(sum(k.volume for k in filtered))
         avg_volume = total_volume / len(filtered)
 
         all_prices = []
         for k in filtered:
-            all_prices.extend([k.open_price, k.high_price, k.low_price, k.close_price])
+            all_prices.extend([float(k.open_price), float(k.high_price), float(k.low_price), float(k.close_price)])
 
-        return {
-            "count": len(filtered),
-            "earliest": min(filtered, key=lambda k: k.open_time).open_time.isoformat(),
-            "latest": max(filtered, key=lambda k: k.open_time).open_time.isoformat(),
-            "total_volume": str(total_volume),
-            "avg_volume": str(avg_volume),
-            "price_range": {
-                "min": str(min(all_prices)) if all_prices else None,
-                "max": str(max(all_prices)) if all_prices else None,
+        return StatisticsResult(
+            count=len(filtered),
+            min_timestamp=earliest_kline.open_time,
+            max_timestamp=latest_kline.open_time,
+            earliest_timestamp=earliest_kline.open_time,
+            latest_timestamp=latest_kline.open_time,
+            storage_size_bytes=len(filtered) * 1024,  # Estimated size
+            avg_size_bytes=1024.0,  # Estimated average size per kline
+            price_statistics={
+                "min": min(all_prices) if all_prices else 0.0,
+                "max": max(all_prices) if all_prices else 0.0,
+                "avg": sum(all_prices) / len(all_prices) if all_prices else 0.0
             },
-        }
+            volume_statistics={
+                "total": total_volume,
+                "avg": avg_volume
+            },
+            data_statistics={
+                "symbol": symbol,
+                "interval": str(interval),
+                "total_trades": sum(k.trades_count for k in filtered)
+            }
+        )
 
     async def close(self) -> None:
         """Close the repository and clean up resources."""
@@ -590,7 +610,7 @@ class TestKlineRepositoryContract(
 
         # Empty repository should return empty statistics
         stats = await repo.get_statistics("BTCUSDT", KlineInterval.MINUTE_1)
-        assert isinstance(stats, dict)
+        assert isinstance(stats, dict)  # StatisticsResult is a TypedDict, so it's a dict at runtime
         assert stats["count"] == 0
 
         # With data should return valid statistics
@@ -600,11 +620,11 @@ class TestKlineRepositoryContract(
 
         stats = await repo.get_statistics("BTCUSDT", KlineInterval.MINUTE_1)
         assert stats["count"] == 3
-        assert "total_volume" in stats
-        assert "avg_volume" in stats
-        assert "earliest" in stats
-        assert "latest" in stats
-        assert "price_range" in stats
+        assert "volume_statistics" in stats
+        assert "price_statistics" in stats
+        assert "earliest_timestamp" in stats
+        assert "latest_timestamp" in stats
+        assert "data_statistics" in stats
 
         await repo.close()
 

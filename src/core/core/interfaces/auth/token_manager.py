@@ -1,22 +1,27 @@
+# ABOUTME: Abstract token manager interface for authentication token lifecycle management
+# ABOUTME: Defines the contract for components that generate, validate, refresh, and revoke authentication tokens
+
 from abc import ABC, abstractmethod
-from typing import Any
 
 from core.models.auth.auth_token import AuthToken
+from core.models.types import UserData
 
 
 class AbstractTokenManager(ABC):
     """
-    Abstract token manager for authentication.
+    Abstract token manager for authentication token lifecycle management.
 
     This abstract class defines the contract for components responsible for
     the lifecycle management of authentication tokens, including their generation,
     validation, and refreshing. Concrete implementations would handle specific
     token types (e.g., JWT, OAuth tokens).
-    #todo: sync and async choices
+
+    Note: Methods are designed to be synchronous for simplicity. Async variants
+    can be implemented in concrete classes if needed for I/O operations.
     """
 
     @abstractmethod
-    def generate_token(self, user_data: dict[str, Any]) -> str:
+    def generate_token(self, user_data: UserData) -> str:
         """
         Generates a new authentication token based on provided user data.
 
@@ -32,6 +37,10 @@ class AbstractTokenManager(ABC):
 
         Returns:
             str: A string representing the newly generated authentication token.
+
+        Raises:
+            AuthenticationError: If token generation fails (e.g., invalid user data, configuration error).
+            ValueError: If required user data fields are missing or invalid.
         """
         pass
 

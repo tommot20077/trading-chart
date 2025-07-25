@@ -15,6 +15,7 @@ from core.implementations.memory.data.data_provider import MemoryDataProvider
 from core.implementations.memory.data.data_converter import InMemoryDataConverter
 from core.models.data.kline import Kline
 from core.models.data.enum import KlineInterval
+from core.config.market_limits import get_market_limits_config
 
 
 class DataCleaningEngine:
@@ -264,8 +265,14 @@ class DataCleaningEngine:
             volume = float(kline.volume)
 
             if volume < min_volume or volume > max_volume:
-                # Normalize to median volume
-                normalized_volume = Decimal(str(median_volume))
+                # Normalize to median volume with proper precision
+                config = get_market_limits_config()
+                limits = config.get_limits(kline.symbol)
+                quantity_precision = Decimal('0.1') ** limits.quantity_precision
+                
+                normalized_volume = Decimal(str(median_volume)).quantize(quantity_precision)
+                quote_volume = (normalized_volume * kline.close_price).quantize(quantity_precision)
+                
                 normalized_kline = Kline(
                     symbol=kline.symbol,
                     interval=kline.interval,
@@ -276,7 +283,7 @@ class DataCleaningEngine:
                     low_price=kline.low_price,
                     close_price=kline.close_price,
                     volume=normalized_volume,
-                    quote_volume=normalized_volume * kline.close_price,
+                    quote_volume=quote_volume,
                     trades_count=kline.trades_count,
                     asset_class=kline.asset_class,
                     exchange=kline.exchange,

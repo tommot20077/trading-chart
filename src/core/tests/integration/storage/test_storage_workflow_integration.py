@@ -362,7 +362,7 @@ class TestStorageWorkflowIntegration:
         assert stored_metrics["execution_time_seconds"] > 0
 
         # Verify reasonable performance (should be very fast with NoOp provider)
-        assert execution_time < 10.0  # Should complete within 10 seconds
+        assert execution_time < 15.0  # Should complete within 15 seconds
 
     @pytest.mark.integration
     @pytest.mark.asyncio

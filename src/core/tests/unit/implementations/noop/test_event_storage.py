@@ -5,7 +5,7 @@ import pytest
 from datetime import datetime, UTC
 from unittest.mock import Mock
 
-from core.implementations.noop.event_storage import NoOpEventStorage
+from core.implementations.noop.storage.event_storage import NoOpEventStorage
 from core.interfaces.event.event_serializer import AbstractEventSerializer
 from core.models.data.event import BaseEvent
 from core.models.event.event_query import EventQuery

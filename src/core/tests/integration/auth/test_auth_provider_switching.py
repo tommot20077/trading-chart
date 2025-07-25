@@ -3,6 +3,7 @@
 
 import pytest
 from unittest.mock import Mock
+from loguru import logger
 
 from core.exceptions import AuthenticationException
 
@@ -127,7 +128,7 @@ class TestAuthProviderSwitchingIntegration:
                     return result
                 except AuthenticationException as e:
                     # Primary failed, try fallback
-                    logging.info(f"Primary auth failed: {e.message}, falling back to secondary")
+                    logger.info(f"Primary auth failed: {e.message}, falling back to secondary")
                     self.fallback_count += 1
                     return await self.fallback_auth.authenticate(request)
 

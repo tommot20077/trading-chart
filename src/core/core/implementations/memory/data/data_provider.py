@@ -10,6 +10,7 @@ from decimal import Decimal
 
 from core.interfaces.data.provider import AbstractDataProvider
 from core.models import Kline, Trade, KlineInterval, TradeSide
+from core.config.market_limits import get_market_limits_config
 from core.exceptions.base import (
     ExternalServiceException,
     DataNotFoundException,
@@ -461,12 +462,22 @@ class MemoryDataProvider(AbstractDataProvider):
         if timestamp is None:
             timestamp = datetime.now(UTC)
 
-        # Price variation ±1%
+        # Get market limits for precision
+        config = get_market_limits_config()
+        limits = config.get_limits(symbol)
+
+        # Price variation ±1% with proper precision
         price_variation = Decimal(str(random.uniform(-0.01, 0.01)))
         price = base_price * (1 + price_variation)
+        # Quantize to market precision
+        precision = Decimal("0.1") ** limits.price_precision
+        price = price.quantize(precision)
 
-        # Random quantity
+        # Random quantity with proper precision
         quantity = Decimal(str(random.uniform(0.001, 10.0)))
+        # Quantize to market precision
+        quantity_precision = Decimal("0.1") ** limits.quantity_precision
+        quantity = quantity.quantize(quantity_precision)
 
         # Random side
         side = random.choice([TradeSide.BUY, TradeSide.SELL])
@@ -492,6 +503,10 @@ class MemoryDataProvider(AbstractDataProvider):
         interval_seconds = KlineInterval.to_seconds(interval)
         close_time = open_time + timedelta(seconds=interval_seconds)
 
+        # Get market limits for precision
+        config = get_market_limits_config()
+        limits = config.get_limits(symbol)
+
         # Generate OHLC prices
         open_price = base_price
 
@@ -507,11 +522,22 @@ class MemoryDataProvider(AbstractDataProvider):
         high_price = max(prices)
         low_price = min(prices)
 
-        # Random volume - keep it reasonable
+        # Quantize all prices to market precision
+        precision = Decimal("0.1") ** limits.price_precision
+        open_price = open_price.quantize(precision)
+        high_price = high_price.quantize(precision)
+        low_price = low_price.quantize(precision)
+        close_price = close_price.quantize(precision)
+
+        # Random volume - keep it reasonable with proper precision
         volume = Decimal(str(random.uniform(100, 1000)))
+        quantity_precision = Decimal("0.1") ** limits.quantity_precision
+        volume = volume.quantize(quantity_precision)
         # Calculate quote volume more conservatively
         avg_price = (high_price + low_price) / 2
         quote_volume = volume * avg_price
+        # Quantize quote volume to precision
+        quote_volume = quote_volume.quantize(quantity_precision)
 
         # Ensure quote_volume doesn't exceed limits
         max_quote_volume = Decimal("500000000.00")  # 500M limit

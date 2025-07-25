@@ -101,9 +101,16 @@ class MiddlewareContext(BaseModel, Generic[T]):
             key: The data key
             value: The data value
         """
-        if not hasattr(self, "_context_data"):
-            self._context_data = {}
-        self._context_data[key] = value
+        # Ensure data is a dictionary
+        if self.data is None:
+            self.data = {}  # type: ignore[assignment]
+        elif not isinstance(self.data, dict):
+            # Convert to dict if it's not already
+            self.data = {"value": self.data}  # type: ignore[assignment]
+
+        # Now we can safely set the key
+        if isinstance(self.data, dict):
+            self.data[key] = value
 
     def get_data(self, key: str, default: Any = None) -> Any:
         """
@@ -116,9 +123,9 @@ class MiddlewareContext(BaseModel, Generic[T]):
         Returns:
             The data value or default
         """
-        if not hasattr(self, "_context_data"):
-            self._context_data = {}
-        return self._context_data.get(key, default)
+        if self.data is None or not isinstance(self.data, dict):
+            return default
+        return self.data.get(key, default)
 
     def get_all_data(self) -> Dict[str, Any]:
         """
@@ -127,9 +134,12 @@ class MiddlewareContext(BaseModel, Generic[T]):
         Returns:
             Dictionary of all context data
         """
-        if not hasattr(self, "_context_data"):
-            self._context_data = {}
-        return self._context_data.copy()
+        if self.data is None:
+            return {}
+        elif isinstance(self.data, dict):
+            return self.data.copy()
+        else:
+            return {"value": self.data}
 
     def set_metadata(self, key: str, value: Any) -> None:
         """
