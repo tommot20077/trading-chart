@@ -14,9 +14,14 @@ dependencies = [
 [tool.uv.workspace]
 members = [
     "src/core",
-    "src/libs",
+    "src/libs/aggregation",
+    "src/libs/auth",
+    "src/libs/data_quality",
+    "src/libs/indicators",
+    "src/libs/resilience",
+    "src/libs/streaming",
     "src/integrations",
-    "src/apps"
+    "src/apps",
 ]
 
 [tool.uv.sources]

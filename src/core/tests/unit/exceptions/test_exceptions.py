@@ -1,6 +1,6 @@
 # ABOUTME: Unit tests for common exception classes in the trading system
 # ABOUTME: Tests cover normal cases, exception cases, and boundary cases following TDD principles
-from psutil.tests import pytest
+import pytest
 
 from core.exceptions.base import (
     CoreException,

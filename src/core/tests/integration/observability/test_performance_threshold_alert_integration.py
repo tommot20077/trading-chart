@@ -333,7 +333,11 @@ class TestPerformanceThresholdAlerts:
         monitor.add_alert_callback(failing_callback)
         monitor.add_alert_callback(successful_callback)
 
-        # Trigger alert
+        # Set very high CPU/memory thresholds to avoid interference
+        monitor.cpu_threshold = 99.0
+        monitor.memory_threshold = 99.0
+        
+        # Trigger only queue size alert to ensure deterministic behavior
         mock_event_bus.update_stats(queue_size=100)
 
         await monitor.start_monitoring()
@@ -342,7 +346,12 @@ class TestPerformanceThresholdAlerts:
 
         # Verify successful callback still worked despite failing callback
         assert len(successful_calls) > 0
-        alert_type, alert_data = successful_calls[0]
+        
+        # Find the high_queue_size alert specifically (since we may get multiple alerts)
+        queue_alerts = [call for call in successful_calls if call[0] == "high_queue_size"]
+        assert len(queue_alerts) > 0, f"Expected high_queue_size alert, got: {[call[0] for call in successful_calls]}"
+        
+        alert_type, alert_data = queue_alerts[0]
         assert alert_type == "high_queue_size"
         assert alert_data["current"] == 100
 

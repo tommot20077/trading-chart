@@ -60,14 +60,14 @@ class LoggerConfig(BaseModel):
 class LoggingSettings(BaseSettings):
     """Logging settings that can be configured via environment variables."""
 
-    log_level: str = Field(default="INFO", validation_alias="LOG_LEVEL")
-    log_file_enabled: bool = Field(default=True, validation_alias="LOG_FILE_ENABLED")
-    log_file_path: str = Field(default="logs/trading-chart.log", validation_alias="LOG_FILE_PATH")
-    log_structured_enabled: bool = Field(default=True, validation_alias="LOG_STRUCTURED_ENABLED")
-    log_console_colorize: bool = Field(default=True, validation_alias="LOG_CONSOLE_COLORIZE")
-    log_otel_enabled: bool = Field(default=False, validation_alias="LOG_OTEL_ENABLED")
+    log_level: str = Field(default="INFO")
+    log_file_enabled: bool = Field(default=True)
+    log_file_path: str = Field(default="logs/trading-chart.log")
+    log_structured_enabled: bool = Field(default=True)
+    log_console_colorize: bool = Field(default=True)
+    log_otel_enabled: bool = Field(default=False)
 
-    model_config = {"env_prefix": "TRADING_CHART_"}
+    model_config = {"env_prefix": "TRADING_CHART_", "extra": "allow"}
 
 
 def setup_logging(config: Optional[LoggerConfig] = None) -> None:

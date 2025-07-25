@@ -757,3 +757,96 @@ TIMEZONE=Asia/Shanghai
         assert fields["ENV"].description is not None
         assert "identification" in fields["APP_NAME"].description.lower()
         assert "environment" in fields["ENV"].description.lower()
+
+    @pytest.mark.unit
+    @pytest.mark.config
+    def test_timezone_validation_whitespace_edge_cases(self):
+        """Test TIMEZONE field handles whitespace edge cases specifically."""
+        # Test empty string after stripping
+        with pytest.raises(ValidationError) as exc_info:
+            BaseCoreSettings(TIMEZONE="   ")
+        assert "Invalid timezone" in str(exc_info.value)
+
+        # Test with newlines and tabs
+        settings = BaseCoreSettings(TIMEZONE="\t\nUTC\n\t")
+        assert settings.TIMEZONE == "UTC"
+
+    @pytest.mark.unit
+    @pytest.mark.config  
+    def test_timezone_validation_complex_iana_names(self):
+        """Test TIMEZONE field with complex IANA timezone names."""
+        complex_timezones = [
+            "America/North_Dakota/New_Salem",
+            "America/Kentucky/Louisville", 
+            "Pacific/Pitcairn",
+            "Antarctica/McMurdo",
+            "Europe/Busingen",
+        ]
+        
+        for tz in complex_timezones:
+            settings = BaseCoreSettings(TIMEZONE=tz)
+            assert settings.TIMEZONE == tz
+
+    @pytest.mark.unit
+    @pytest.mark.config
+    def test_env_validator_with_special_characters(self):
+        """Test ENV field validation with special characters."""
+        # These should all fail validation as they're not valid environments
+        invalid_envs = ["dev-1", "prod_2", "staging@test", "development#1"]
+        
+        for invalid_env in invalid_envs:
+            with pytest.raises(ValidationError):
+                BaseCoreSettings(ENV=invalid_env)
+
+    @pytest.mark.unit
+    @pytest.mark.config
+    def test_log_level_with_numeric_strings(self):
+        """Test LOG_LEVEL field with numeric strings (should fail)."""
+        invalid_levels = ["1", "2", "3", "0", "10"]
+        
+        for invalid_level in invalid_levels:
+            with pytest.raises(ValidationError):
+                BaseCoreSettings(LOG_LEVEL=invalid_level)
+
+    @pytest.mark.unit
+    @pytest.mark.config  
+    def test_validator_chaining_behavior(self):
+        """Test that multiple validators work together correctly."""
+        # Test that field validation occurs before model validation
+        settings = BaseCoreSettings(
+            ENV="  PROD  ",
+            LOG_LEVEL="  warning  ", 
+            LOG_FORMAT="  STRUCTURED  ",
+            TIMEZONE="  america/new_york  "
+        )
+        
+        assert settings.ENV == "production"
+        assert settings.LOG_LEVEL == "WARNING"
+        assert settings.LOG_FORMAT == "json"
+        assert settings.TIMEZONE == "America/New_York"
+
+    @pytest.mark.unit
+    @pytest.mark.config
+    def test_model_config_validation(self):
+        """Test model configuration settings."""
+        # Test that extra fields are ignored as configured
+        settings = BaseCoreSettings(_env_file="nonexistent.env", EXTRA_FIELD="ignored")
+        
+        # Should create successfully with defaults (extra field ignored)
+        assert settings.APP_NAME == "TradingChart"
+        assert not hasattr(settings, "EXTRA_FIELD")
+
+    @pytest.mark.unit
+    @pytest.mark.config
+    def test_timezone_case_edge_cases(self):
+        """Test TIMEZONE case normalization edge cases."""
+        # Test deep nested timezones with case normalization
+        test_cases = [
+            ("america/argentina/buenos_aires", "America/Argentina/Buenos_Aires"),
+            ("america/north_dakota/new_salem", "America/North_Dakota/New_Salem"),
+            ("pacific/marquesas", "Pacific/Marquesas"),
+        ]
+        
+        for input_tz, expected_tz in test_cases:
+            settings = BaseCoreSettings(TIMEZONE=input_tz)
+            assert settings.TIMEZONE == expected_tz

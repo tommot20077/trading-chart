@@ -240,8 +240,10 @@ class TestPerformanceEventBusIntegration:
             assert "max" in metric
             assert "avg" in metric
 
-            # Verify logical relationships
-            assert metric["min"] <= metric["avg"] <= metric["max"]
+            # Verify logical relationships (with floating point tolerance)
+            tolerance = 1e-10  # Small tolerance for floating point precision
+            assert metric["min"] <= metric["avg"] + tolerance
+            assert metric["avg"] <= metric["max"] + tolerance
 
         # Verify event bus summary
         eb_summary = summary["event_bus"]

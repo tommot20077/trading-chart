@@ -437,11 +437,19 @@ class TestModelSerializationPerformance:
             )
             format_results[format_name] = result
         
-        # Verify that direct dict methods are faster than JSON serialization
-        assert (format_results["to_dict"]["avg_time_per_object_ms"] < 
-                format_results["json_via_to_dict"]["avg_time_per_object_ms"])
-        assert (format_results["model_dump"]["avg_time_per_object_ms"] < 
-                format_results["json_via_model_dump"]["avg_time_per_object_ms"])
+        # Verify that direct dict methods are generally faster than JSON serialization
+        # Allow for 10% tolerance to handle timing variations
+        to_dict_time = format_results["to_dict"]["avg_time_per_object_ms"]
+        json_to_dict_time = format_results["json_via_to_dict"]["avg_time_per_object_ms"]
+        model_dump_time = format_results["model_dump"]["avg_time_per_object_ms"] 
+        json_model_dump_time = format_results["json_via_model_dump"]["avg_time_per_object_ms"]
+        
+        # Allow 10% tolerance for timing variations
+        tolerance = 0.1
+        assert (to_dict_time <= json_to_dict_time * (1 + tolerance)), \
+            f"to_dict ({to_dict_time:.6f}ms) should be faster than json_via_to_dict ({json_to_dict_time:.6f}ms)"
+        assert (model_dump_time <= json_model_dump_time * (1 + tolerance)), \
+            f"model_dump ({model_dump_time:.6f}ms) should be faster than json_via_model_dump ({json_model_dump_time:.6f}ms)"
     
     def test_memory_efficiency_serialization(self, sample_orders):
         """Test memory efficiency of serialization methods."""

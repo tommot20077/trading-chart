@@ -300,8 +300,10 @@ class TestEventBusCompleteIntegration:
         for event in events:
             await event_bus.publish(event)
 
-        # Wait for all processing to complete
-        await asyncio.sleep(1.0)
+        # Wait for all events to be processed using precise synchronization
+        flush_success = await event_bus.flush_queue(timeout=10.0)
+        if not flush_success:
+            pytest.fail(f"Event queue flush timed out after 10 seconds. Queue size: {event_bus.get_queue_size()}")
 
         duration = performance_monitor.end_timer("high_load_publish")
 

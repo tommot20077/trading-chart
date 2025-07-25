@@ -1,15 +1,15 @@
-# ABOUTME: 驗證結果模型的單元測試，測試ValidationResult、ValidationIssue等類的功能
-# ABOUTME: 確保驗證結果結構的正確性，包括問題追踪、嚴重程度分類和摘要生成
+# ABOUTME: Unit tests for validation result models, testing ValidationResult, ValidationIssue and related classes
+# ABOUTME: Ensures correctness of validation result structure including issue tracking, severity classification and summary generation
 
 import pytest
 from core.validators.validation_result import ValidationResult, ValidationIssue, ValidationSeverity
 
 
 class TestValidationSeverity:
-    """驗證嚴重程度枚舉測試."""
+    """Test cases for ValidationSeverity enum."""
 
     def test_severity_values(self):
-        """測試嚴重程度枚舉值."""
+        """Test validation severity enum values."""
         assert ValidationSeverity.INFO == "info"
         assert ValidationSeverity.WARNING == "warning"
         assert ValidationSeverity.ERROR == "error"
@@ -17,10 +17,10 @@ class TestValidationSeverity:
 
 
 class TestValidationIssue:
-    """驗證問題模型測試."""
+    """Test cases for ValidationIssue model."""
 
     def test_create_basic_issue(self):
-        """測試創建基本驗證問題."""
+        """Test creating basic validation issue."""
         issue = ValidationIssue(
             code="TEST_ERROR",
             severity=ValidationSeverity.ERROR,
@@ -37,7 +37,7 @@ class TestValidationIssue:
         assert issue.metadata == {}
 
     def test_create_detailed_issue(self):
-        """測試創建詳細驗證問題."""
+        """Test creating detailed validation issue."""
         issue = ValidationIssue(
             code="VALIDATION_FAILED",
             severity=ValidationSeverity.WARNING,
@@ -59,7 +59,7 @@ class TestValidationIssue:
         assert issue.metadata == {"validator": "email", "attempts": 3}
 
     def test_string_validation(self):
-        """測試字符串驗證和清理."""
+        """Test string validation and cleanup."""
         issue = ValidationIssue(
             code="  TEST_CODE  ",
             severity=ValidationSeverity.INFO,
@@ -71,10 +71,10 @@ class TestValidationIssue:
 
 
 class TestValidationResult:
-    """驗證結果模型測試."""
+    """Test cases for ValidationResult model."""
 
     def test_create_empty_result(self):
-        """測試創建空驗證結果."""
+        """Test creating empty validation result."""
         result = ValidationResult(is_valid=True)
         
         assert result.is_valid is True
@@ -83,7 +83,7 @@ class TestValidationResult:
         assert result.validation_context == {}
 
     def test_create_result_with_data(self):
-        """測試創建帶數據的驗證結果."""
+        """Test creating validation result with data."""
         result = ValidationResult(
             is_valid=False,
             validated_models=["Order", "TradingPair"],
@@ -95,7 +95,7 @@ class TestValidationResult:
         assert result.validation_context == {"timestamp": "2024-01-01", "validator_version": "1.0"}
 
     def test_add_issue_method(self):
-        """測試添加驗證問題方法."""
+        """Test add issue method."""
         result = ValidationResult(is_valid=True)
         
         result.add_issue(
@@ -120,11 +120,11 @@ class TestValidationResult:
         assert issue.suggestion == "Fix the issue"
         assert issue.metadata == {"custom_field": "custom_value"}
         
-        # 添加WARNING不應改變is_valid狀態
+        # Adding WARNING should not change is_valid status
         assert result.is_valid is True
 
     def test_add_error_changes_validity(self):
-        """測試添加錯誤級別問題會改變有效性."""
+        """Test that adding error-level issue changes validity."""
         result = ValidationResult(is_valid=True)
         
         result.add_issue(
@@ -136,7 +136,7 @@ class TestValidationResult:
         assert result.is_valid is False
 
     def test_add_critical_changes_validity(self):
-        """測試添加嚴重錯誤會改變有效性."""
+        """Test that adding critical error changes validity."""
         result = ValidationResult(is_valid=True)
         
         result.add_issue(
@@ -148,45 +148,45 @@ class TestValidationResult:
         assert result.is_valid is False
 
     def test_has_errors_property(self):
-        """測試has_errors屬性."""
+        """Test has_errors property."""
         result = ValidationResult(is_valid=True)
         
-        # 初始狀態無錯誤
+        # Initial state has no errors
         assert result.has_errors is False
         
-        # 添加INFO級別問題
+        # Add INFO level issue
         result.add_issue("INFO_CODE", ValidationSeverity.INFO, "Info message")
         assert result.has_errors is False
         
-        # 添加WARNING級別問題
+        # Add WARNING level issue
         result.add_issue("WARNING_CODE", ValidationSeverity.WARNING, "Warning message")
         assert result.has_errors is False
         
-        # 添加ERROR級別問題
+        # Add ERROR level issue
         result.add_issue("ERROR_CODE", ValidationSeverity.ERROR, "Error message")
         assert result.has_errors is True
         
-        # 添加CRITICAL級別問題
+        # Add CRITICAL level issue
         result.add_issue("CRITICAL_CODE", ValidationSeverity.CRITICAL, "Critical message")
         assert result.has_errors is True
 
     def test_has_warnings_property(self):
-        """測試has_warnings屬性."""
+        """Test has_warnings property."""
         result = ValidationResult(is_valid=True)
         
-        # 初始狀態無警告
+        # Initial state has no warnings
         assert result.has_warnings is False
         
-        # 添加INFO級別問題
+        # Add INFO level issue
         result.add_issue("INFO_CODE", ValidationSeverity.INFO, "Info message")
         assert result.has_warnings is False
         
-        # 添加WARNING級別問題
+        # Add WARNING level issue
         result.add_issue("WARNING_CODE", ValidationSeverity.WARNING, "Warning message")
         assert result.has_warnings is True
 
     def test_error_count_property(self):
-        """測試error_count屬性."""
+        """Test error_count property."""
         result = ValidationResult(is_valid=True)
         
         assert result.error_count == 0
@@ -204,7 +204,7 @@ class TestValidationResult:
         assert result.error_count == 2
 
     def test_warning_count_property(self):
-        """測試warning_count屬性."""
+        """Test warning_count property."""
         result = ValidationResult(is_valid=True)
         
         assert result.warning_count == 0
@@ -222,7 +222,7 @@ class TestValidationResult:
         assert result.warning_count == 2
 
     def test_get_issues_by_severity(self):
-        """測試根據嚴重程度獲取問題列表."""
+        """Test getting issues by severity level."""
         result = ValidationResult(is_valid=True)
         
         result.add_issue("INFO_CODE", ValidationSeverity.INFO, "Info")
@@ -248,7 +248,7 @@ class TestValidationResult:
         assert critical_issues[0].code == "CRITICAL_CODE"
 
     def test_get_summary(self):
-        """測試獲取驗證結果摘要."""
+        """Test getting validation result summary."""
         result = ValidationResult(
             is_valid=False,
             validated_models=["Order", "TradingPair", "Trade"],
@@ -272,13 +272,13 @@ class TestValidationResult:
         assert summary == expected_summary
 
     def test_complex_validation_scenario(self):
-        """測試複雜驗證場景."""
+        """Test complex validation scenario."""
         result = ValidationResult(
             is_valid=True,
             validated_models=["Order", "TradingPair"],
         )
         
-        # 添加多個不同級別的問題
+        # Add multiple issues at different severity levels
         result.add_issue(
             code="ORDER_INFO",
             severity=ValidationSeverity.INFO,
@@ -304,15 +304,15 @@ class TestValidationResult:
             actual_value="0.0005",
         )
         
-        # 驗證結果狀態
-        assert result.is_valid is False  # 因為有ERROR
+        # Verify result status
+        assert result.is_valid is False  # Because there's an ERROR
         assert result.has_errors is True
         assert result.has_warnings is True
         assert result.error_count == 1
         assert result.warning_count == 1
         assert len(result.issues) == 3
         
-        # 驗證摘要
+        # Verify summary
         summary = result.get_summary()
         assert summary["total_issues"] == 3
         assert summary["error_count"] == 1

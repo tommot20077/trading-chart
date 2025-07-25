@@ -9,11 +9,8 @@ description = "Applications for trading-chart."
 requires-python = ">=3.11"
 dependencies = [
     "trading-chart-core",
-    "trading-chart-libs",
-    "trading-chart-integrations"
 ]
 
 [tool.uv.sources]
 trading-chart-core = { workspace = true }
-trading-chart-libs = { workspace = true }
 trading-chart-integrations = { workspace = true }

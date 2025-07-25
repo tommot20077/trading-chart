@@ -2,8 +2,14 @@
 # ABOUTME: Tests pipeline functionality, middleware management, and execution flow
 
 import pytest
+import asyncio
+import threading
+import time
+from unittest.mock import Mock, patch
+from typing import List
 
 from core.implementations.memory.middleware import InMemoryMiddlewarePipeline
+from tests.constants import TestTimeouts, PerformanceThresholds, TestDataSizes
 from core.interfaces.middleware import AbstractMiddleware
 from core.models.middleware import MiddlewareContext, MiddlewareResult, MiddlewareStatus
 from core.models.event.event_priority import EventPriority
@@ -584,3 +590,204 @@ class TestInMemoryMiddlewarePipeline:
         
         # Verify execution was logged
         assert mock_logger.info.call_count >= 2  # At least start and completion logs
+
+
+class TestInMemoryMiddlewarePipelineEnhanced:
+    """Enhanced test cases for complex middleware pipeline scenarios."""
+
+    def _create_test_middleware(
+        self,
+        priority: EventPriority = EventPriority.NORMAL,
+        should_continue: bool = True,
+        can_process: bool = True,
+        name: str = "TestMiddleware",
+        process_delay: float = 0.0,
+        raise_exception: bool = False,
+        modify_context: bool = False,
+    ) -> AbstractMiddleware:
+        """Create enhanced test middleware with more configuration options."""
+
+        class EnhancedTestMiddleware(AbstractMiddleware):
+            def __init__(self, priority: EventPriority, name: str):
+                super().__init__(priority)
+                self.processed_contexts = []
+                self.can_process_calls = []
+                self.name = name
+                self.process_delay = process_delay
+                self.raise_exception = raise_exception
+                self.modify_context = modify_context
+
+            async def process(self, context: MiddlewareContext) -> MiddlewareResult:
+                if self.process_delay > 0:
+                    await asyncio.sleep(self.process_delay)
+                
+                if self.raise_exception:
+                    raise RuntimeError(f"Intentional error from {self.name}")
+                
+                self.processed_contexts.append(context)
+                
+                if self.modify_context:
+                    # Modify context data to test data flow
+                    context.data = f"{context.data}_processed_by_{self.name}"
+                    context.metadata[self.name] = "processed"
+                
+                return MiddlewareResult(
+                    middleware_name=self.name,
+                    status=MiddlewareStatus.SUCCESS,
+                    data={"processed": True, "timestamp": time.time()},
+                    should_continue=should_continue,
+                )
+
+            def can_process(self, context: MiddlewareContext) -> bool:
+                self.can_process_calls.append(context)
+                return can_process
+
+        return EnhancedTestMiddleware(priority, name)
+
+    @pytest.mark.asyncio
+    async def test_middleware_data_flow_modification(self):
+        """Test that middleware can modify context data and it flows through pipeline."""
+        pipeline = InMemoryMiddlewarePipeline()
+        
+        # Create middleware that modify context data
+        middleware1 = self._create_test_middleware(
+            priority=EventPriority.HIGH,
+            name="Modifier1",
+            modify_context=True
+        )
+        middleware2 = self._create_test_middleware(
+            priority=EventPriority.NORMAL,
+            name="Modifier2",
+            modify_context=True
+        )
+        
+        await pipeline.add_middleware(middleware1)
+        await pipeline.add_middleware(middleware2)
+        
+        context = MiddlewareContext(data="original_data")
+        result = await pipeline.execute(context)
+        
+        assert result.is_successful()
+        # Data should be modified by both middleware in order
+        assert context.data == "original_data_processed_by_Modifier1_processed_by_Modifier2"
+        assert "Modifier1" in context.metadata
+        assert "Modifier2" in context.metadata
+
+    @pytest.mark.asyncio
+    async def test_middleware_error_recovery_scenarios(self):
+        """Test various error recovery scenarios in pipeline execution."""
+        pipeline = InMemoryMiddlewarePipeline()
+        
+        # Create middleware: success -> error -> success
+        success_middleware1 = self._create_test_middleware(
+            priority=EventPriority.HIGH,
+            name="Success1"
+        )
+        error_middleware = self._create_test_middleware(
+            priority=EventPriority.NORMAL,
+            name="ErrorMiddleware",
+            raise_exception=True
+        )
+        success_middleware2 = self._create_test_middleware(
+            priority=EventPriority.LOW,
+            name="Success2"
+        )
+        
+        await pipeline.add_middleware(success_middleware1)
+        await pipeline.add_middleware(error_middleware)
+        await pipeline.add_middleware(success_middleware2)
+        
+        context = MiddlewareContext(data="test")
+        result = await pipeline.execute(context)
+        
+        # Pipeline should handle the error gracefully
+        assert result.is_successful()
+        
+        # First middleware should have processed
+        assert len(success_middleware1.processed_contexts) == 1
+        # Error middleware error should be caught
+        assert len(error_middleware.processed_contexts) == 0  
+        # Later middleware should not be processed due to error
+        assert len(success_middleware2.processed_contexts) == 0
+        
+        # Execution should stop at error
+        assert context.execution_path == ["Success1"]
+
+    @pytest.mark.asyncio
+    async def test_pipeline_performance_under_load(self):
+        """Test pipeline performance with multiple middleware under load."""
+        pipeline = InMemoryMiddlewarePipeline()
+        
+        # Add multiple middleware with small delays
+        middleware_count = TestDataSizes.MEDIUM_DATASET // 10  # 10 middleware
+        for i in range(middleware_count):
+            middleware = self._create_test_middleware(
+                priority=EventPriority.NORMAL,
+                name=f"LoadMiddleware{i}",
+                process_delay=TestTimeouts.QUICK_OPERATION / 10  # Very small delay
+            )
+            await pipeline.add_middleware(middleware)
+        
+        # Execute multiple times and measure performance
+        execution_count = TestDataSizes.SMALL_DATASET  # 10 executions
+        start_time = time.time()
+        
+        for i in range(execution_count):
+            context = MiddlewareContext(data=f"test_data_{i}")
+            result = await pipeline.execute(context)
+            assert result.is_successful()
+        
+        end_time = time.time()
+        total_time = end_time - start_time
+        
+        # Verify performance is acceptable
+        avg_time_per_execution = total_time / execution_count
+        assert avg_time_per_execution < TestTimeouts.STANDARD_OPERATION, \
+            f"Average execution time {avg_time_per_execution}s exceeds threshold"
+        
+        # Verify stats are tracked correctly
+        stats = pipeline.get_performance_stats()
+        assert stats["total_executions"] == execution_count
+        assert stats["middleware_count"] == middleware_count
+
+    @pytest.mark.asyncio
+    async def test_concurrent_pipeline_modifications(self):
+        """Test concurrent modifications to pipeline structure."""
+        pipeline = InMemoryMiddlewarePipeline()
+        
+        # Create middleware for concurrent operations
+        middleware_list = []
+        for i in range(TestDataSizes.SMALL_DATASET):
+            middleware = self._create_test_middleware(name=f"ConcurrentMiddleware{i}")
+            middleware_list.append(middleware)
+        
+        # Concurrent addition and removal
+        async def add_worker(middleware_batch: List[AbstractMiddleware]):
+            for middleware in middleware_batch:
+                await pipeline.add_middleware(middleware)
+                await asyncio.sleep(TestTimeouts.QUICK_OPERATION / 100)  # Small delay
+        
+        async def remove_worker(middleware_batch: List[AbstractMiddleware]):
+            await asyncio.sleep(TestTimeouts.QUICK_OPERATION)  # Wait for some additions
+            for middleware in middleware_batch:
+                try:
+                    await pipeline.remove_middleware(middleware)
+                except ValueError:
+                    pass  # Middleware might not exist yet
+        
+        # Split middleware into batches for concurrent operations
+        batch_size = len(middleware_list) // 2
+        batch1 = middleware_list[:batch_size]
+        batch2 = middleware_list[batch_size:]
+        
+        # Run concurrent operations
+        await asyncio.gather(
+            add_worker(batch1),
+            add_worker(batch2),
+            remove_worker(batch1[:2]),  # Remove subset
+        )
+        
+        # Verify final state is consistent
+        final_count = await pipeline.get_middleware_count()
+        assert final_count >= 0  # Count should be non-negative
+        assert final_count <= len(middleware_list)  # Count should not exceed total
