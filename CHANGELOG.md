@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased - 2025-07-26 [960e950](https://github.com/tommot20077/trading-chart/commit/960e95095e63177fbe9851bcebe6fb99be566323)
+
+### Added
+- **Extended Library Architecture**: Added multiple specialized library module frameworks, with content updates planned for the next version
+  - `src/libs/aggregation`: Data aggregation and processing utilities
+  - `src/libs/auth`: Authentication and authorization services
+  - `src/libs/data_quality`: Data validation and quality assurance tools
+  - `src/libs/indicators`: Technical indicators and analysis tools
+  - `src/libs/resilience`: System resilience and fault tolerance components
+  - `src/libs/streaming`: Real-time data streaming capabilities
+- **Enhanced Test Infrastructure**: Significantly expanded test coverage with comprehensive test suites
+  - Middleware pipeline unit and integration tests
+  - Event handler registry integration tests
+  - Expanded authentication tests with comprehensive validation scenarios
+  - Added performance benchmarking for model serialization
+- **Core System Constants**: Added comprehensive test constants module for better test organization
+
+### Changed
+- **Workspace Configuration**: Updated uv workspace members to include all new library modules for enhanced modularity
+- **Project Structure**: Reorganized library components into specialized modules for better maintainability and separation of concerns
+- **Logging Configuration**: Enhanced logging setup with improved error handling and configuration management
+- **Test Framework**: Upgraded test infrastructure with better isolation and comprehensive coverage
+
+### Removed
+- **Documentation Cleanup**: Removed `CORE_COMPLETION_CHECKLIST.md` (842 lines) as core system implementation has been completed
+- **Legacy App Configuration**: Cleaned up redundant configuration in apps module
+
+### Technical Improvements
+- **Test Coverage**: Dramatically improved test coverage across all core components
+- **Code Quality**: Enhanced code quality with comprehensive validation and error handling
+- **Performance Testing**: Added specialized performance tests for critical system components
+- **Architecture Stability**: Solidified core architecture through extensive test validation
+
+---
+
+## Unreleased - 2025-07-25 [f5243d9](https://github.com/tommot20077/trading-chart/commit/f5243d936bc3632b9801c1fa2268eccbf954691c)
+
+### Documentation
+- **CHANGELOG Updates**: Updated both English and Traditional Chinese changelog files to reflect recent system improvements and architectural changes
+- **Version Documentation**: Enhanced documentation structure with proper commit references and comprehensive change tracking
+
+---
+
 ## Unreleased - 2025-07-25 [7c3c4b](https://github.com/tommot20077/trading-chart/commit/7c3c4b26a95dfe7feeb789d517893ebda0f1cd24)
 
 ### Added
