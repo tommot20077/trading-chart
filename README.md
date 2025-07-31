@@ -45,6 +45,11 @@ Modern trading data infrastructure with clean architecture design.
 - `uv sync`: Sync workspace dependencies
 - `uv run <command>`: Execute commands in virtual environment
 
+### Environment Setup
+- **Virtual Environment**: Use `uv run` to execute commands in the correct virtual environment
+- **Environment Variables**: Avoid setting global `VIRTUAL_ENV` to prevent path conflicts
+- **Recommendation**: Let `uv` handle virtual environment management automatically
+
 ### Testing Strategy
 - **Multi-layered testing**: Unit → Integration → Contract → E2E → Benchmark
 - **Test markers**: Use `@pytest.mark.unit`, `@pytest.mark.integration`, `@pytest.mark.benchmark`, etc.
